@@ -1,0 +1,69 @@
+{
+  "name": "wheel-strategy-manager-pro",
+  "version": "1.0.0",
+  "description": "Advanced Wheel Strategy Manager for options trading with comprehensive P&L tracking, data persistence, and professional UI",
+  "main": "public/index.html",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx http-server public -p 3000 -o",
+    "start": "npm run dev",
+    "build": "echo 'Static site - no build step needed'",
+    "deploy": "vercel --prod",
+    "deploy:netlify": "netlify deploy --prod --dir=public",
+    "deploy:gh-pages": "gh-pages -d public",
+    "preview": "vercel",
+    "backup": "node scripts/backup.js",
+    "restore": "node scripts/restore.js",
+    "validate": "node scripts/validate.js",
+    "optimize": "node scripts/optimize.js",
+    "test": "echo 'No tests specified yet'",
+    "lint": "echo 'No linting configured yet'",
+    "format": "prettier --write public/**/*.{html,css,js,json}",
+    "analyze": "npx bundlesize"
+  },
+  "keywords": [
+    "options-trading",
+    "wheel-strategy",
+    "covered-calls",
+    "cash-secured-puts",
+    "portfolio-management",
+    "trading-dashboard",
+    "pnl-tracking",
+    "finance",
+    "investment",
+    "web-app",
+    "pwa"
+  ],
+  "author": "AI Trading Assistant",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/wheel-strategy-manager-pro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/wheel-strategy-manager-pro/issues"
+  },
+  "homepage": "https://github.com/yourusername/wheel-strategy-manager-pro#readme",
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "prettier": "^3.0.0",
+    "gh-pages": "^6.0.0",
+    "bundlesize": "^0.18.1"
+  },
+  "optionalDependencies": {
+    "vercel": "^32.0.0",
+    "netlify-cli": "^16.0.0"
+  },
+  "bundlesize": [
+    {
+      "path": "public/index.html",
+      "maxSize": "60 kB",
+      "compression": "gzip"
+    }
+  ]
+}

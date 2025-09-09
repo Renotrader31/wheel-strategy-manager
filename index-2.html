@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Advanced Wheel Strategy Manager for options trading with comprehensive P&L tracking">
+    <meta name="keywords" content="options trading, wheel strategy, covered calls, cash secured puts, portfolio management">
+    <meta name="author" content="AI Trading Assistant">
+    <title>Wheel Strategy Manager Pro</title>
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1f3a">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+
+    <style>
+        /* CSS Custom Properties for Theming */
+        :root {
+            --primary-bg: #1a1f3a;
+            --secondary-bg: #2a3254;
+            --card-bg: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-light: #ffffff;
+            --accent-blue: #4CAF50;
+            --accent-green: #2196F3;
+            --accent-red: #f44336;
+            --accent-orange: #ff9800;
+            --border-color: #e0e0e0;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        /* Dark theme overrides */
+        [data-theme="dark"] {
+            --card-bg: #2a3254;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --border-color: #3a4254;
+        }
+
+        /* Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Styles */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #4CAF50, #2196F3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--text-light);
+            color: var(--text-light);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            box-shadow: var(--shadow);
+            color: var(--text-primary);
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-positive { color: var(--accent-blue); }
+        .metric-negative { color: var(--accent-red); }
+        .metric-neutral { color: var(--accent-orange); }
+
+        /* Trade Grid */
+        .trades-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .trade-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            color: var(--text-primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .trade-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+        }
+
+        .trade-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .trade-symbol {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        .trade-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-active { background: #e8f5e8; color: #2e7d32; }
+        .status-closed { background: #e3f2fd; color: #1976d2; }
+        .status-assigned { background: #fff3e0; color: #f57c00; }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            transition: var(--transition);
+            background: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: var(--accent-red);
+        }
+
+        /* Animations */
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1100;
+            min-width: 300px;
+            transform: translateX(100%);
+            transition: var(--transition);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification-success { border-left: 4px solid var(--accent-blue); }
+        .notification-error { border-left: 4px solid var(--accent-red); }
+        .notification-info { border-left: 4px solid var(--accent-green); }
+
+        /* Keyboard Shortcuts Help */
+        .keyboard-shortcuts {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            font-size: 0.8rem;
+            max-width: 200px;
+            display: none;
+        }
+
+        .keyboard-shortcuts.show {
+            display: block;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .shortcut-key {
+            background: var(--border-color);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            .header-controls,
+            .modal,
+            .notification,
+            .keyboard-shortcuts {
+                display: none !important;
+            }
+
+            .card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+
+            .trades-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                justify-content: center;
+                margin-bottom: 10px;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
+
+            .trades-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .trade-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid var(--accent-blue);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-10 { margin-bottom: 10px; }
+        .mb-20 { margin-bottom: 20px; }
+        .mt-10 { margin-top: 10px; }
+        .mt-20 { margin-top: 20px; }
+
+        /* Accessibility Improvements */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Wheel Strategy Manager Pro</h1>
+            <p>Advanced Options Trading Portfolio Management</p>
+
+            <div class="header-controls">
+                <button class="btn btn-primary" onclick="manager.showAddTradeModal()">
+                    ➕ Add Trade
+                </button>
+                <button class="btn btn-secondary" onclick="manager.exportData()">
+                    📁 Export Data
+                </button>
+                <button class="btn btn-outline" onclick="manager.importData()">
+                    📤 Import Data
+                </button>
+                <button class="btn btn-outline" onclick="manager.showBackupModal()">
+                    💾 Backup/Restore
+                </button>
+                <button class="btn btn-outline" onclick="manager.toggleKeyboardShortcuts()">
+                    ⌨️ Shortcuts
+                </button>
+                <button class="btn btn-outline" onclick="window.print()">
+                    🖨️ Print
+                </button>
+            </div>
+        </header>
+
+        <!-- Portfolio Metrics -->
+        <section class="metrics-grid" id="portfolioMetrics">
+            <!-- Metrics will be populated by JavaScript -->
+        </section>
+
+        <!-- Active Positions -->
+        <section class="card">
+            <div class="card-header">
+                <h2 class="card-title">Active Positions</h2>
+                <span class="badge" id="activePositionsCount">0</span>
+            </div>
+            <div class="trades-grid" id="activeTradesGrid">
+                <!-- Active trades will be populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Closed Positions -->
+        <section class="card">
+            <div class="card-header">
+                <h2 class="card-title">Closed Positions</h2>
+                <span class="badge" id="closedPositionsCount">0</span>
+            </div>
+            <div class="trades-grid" id="closedTradesGrid">
+                <!-- Closed trades will be populated by JavaScript -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Add Trade Modal -->
+    <div class="modal" id="addTradeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Trade</h3>
+                <button class="close-btn" onclick="manager.closeModal('addTradeModal')">&times;</button>
+            </div>
+            <form id="addTradeForm">
+                <div class="form-group">
+                    <label class="form-label" for="tradeType">Trade Type</label>
+                    <select class="form-control" id="tradeType" required>
+                        <option value="">Select Trade Type</option>
+                        <option value="stock">Stock Purchase</option>
+                        <option value="csp">Cash Secured Put</option>
+                        <option value="cc">Covered Call</option>
+                        <option value="long_call">Long Call</option>
+                        <option value="long_put">Long Put</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="symbol">Symbol</label>
+                        <input type="text" class="form-control" id="symbol" required placeholder="e.g., AAPL">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="quantity">Quantity</label>
+                        <input type="number" class="form-control" id="quantity" required placeholder="100">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="entryPrice">Entry Price</label>
+                        <input type="number" class="form-control" id="entryPrice" step="0.01" required placeholder="150.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="currentPrice">Current Price</label>
+                        <input type="number" class="form-control" id="currentPrice" step="0.01" required placeholder="155.00">
+                    </div>
+                </div>
+
+                <div class="form-row" id="optionsFields" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label" for="strikePrice">Strike Price</label>
+                        <input type="number" class="form-control" id="strikePrice" step="0.01" placeholder="160.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="expiration">Expiration</label>
+                        <input type="date" class="form-control" id="expiration">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="notes">Notes (Optional)</label>
+                    <textarea class="form-control" id="notes" rows="3" placeholder="Add any notes about this trade..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <button type="submit" class="btn btn-primary">Add Trade</button>
+                    <button type="button" class="btn btn-outline" onclick="manager.closeModal('addTradeModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Backup/Restore Modal -->
+    <div class="modal" id="backupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Backup & Restore</h3>
+                <button class="close-btn" onclick="manager.closeModal('backupModal')">&times;</button>
+            </div>
+            <div>
+                <h4>Create Backup</h4>
+                <p>Download a complete backup of your portfolio data:</p>
+                <button class="btn btn-primary mb-20" onclick="manager.createBackup()">
+                    💾 Download Backup
+                </button>
+
+                <h4>Restore from Backup</h4>
+                <p>Upload a previously saved backup file:</p>
+                <input type="file" id="restoreFile" accept=".json" class="form-control mb-20">
+                <button class="btn btn-secondary" onclick="manager.restoreBackup()">
+                    📤 Restore Backup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts -->
+    <div class="keyboard-shortcuts" id="keyboardShortcuts">
+        <h4>Keyboard Shortcuts</h4>
+        <div class="shortcut-item">
+            <span>Add Trade</span>
+            <span class="shortcut-key">Ctrl+N</span>
+        </div>
+        <div class="shortcut-item">
+            <span>Export</span>
+            <span class="shortcut-key">Ctrl+E</span>
+        </div>
+        <div class="shortcut-item">
+            <span>Import</span>
+            <span class="shortcut-key">Ctrl+I</span>
+        </div>
+        <div class="shortcut-item">
+            <span>Print</span>
+            <span class="shortcut-key">Ctrl+P</span>
+        </div>
+        <div class="shortcut-item">
+            <span>Refresh</span>
+            <span class="shortcut-key">F5</span>
+        </div>
+    </div>
+
+    <!-- Hidden File Input for Import -->
+    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="manager.handleImportFile(this)">
+
+    <script>
+        class WheelStrategyManager {
+            constructor() {
+                this.trades = new Map();
+                this.closedTrades = [];
+                this.settings = {
+                    autoSave: true,
+                    theme: 'dark',
+                    notifications: true,
+                    autoRefresh: true
+                };
+                this.autoSaveInterval = null;
+                this.keyboardShortcutsVisible = false;
+                this.init();
+            }
+
+            async init() {
+                try {
+                    await this.loadData();
+                    this.setupEventListeners();
+                    this.setupAutoSave();
+                    this.setupKeyboardShortcuts();
+                    this.renderDashboard();
+                    this.showNotification('Dashboard loaded successfully', 'success');
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    this.showNotification('Error initializing dashboard', 'error');
+                }
+            }
+
+            // Data Persistence Methods
+            async saveData() {
+                try {
+                    const data = {
+                        trades: Array.from(this.trades.entries()),
+                        closedTrades: this.closedTrades,
+                        settings: this.settings,
+                        lastSaved: new Date().toISOString(),
+                        version: '1.0.0'
+                    };
+                    localStorage.setItem('wheelStrategyData', JSON.stringify(data));
+                    if (this.settings.notifications) {
+                        this.showNotification('Data saved successfully', 'success');
+                    }
+                } catch (error) {
+                    console.error('Save error:', error);
+                    this.showNotification('Error saving data', 'error');
+                }
+            }
+
+            async loadData() {
+                try {
+                    const savedData = localStorage.getItem('wheelStrategyData');
+                    if (savedData) {
+                        const data = JSON.parse(savedData);
+
+                        // Validate data structure
+                        if (data.trades && Array.isArray(data.trades)) {
+                            this.trades = new Map(data.trades);
+                        }
+                        if (data.closedTrades && Array.isArray(data.closedTrades)) {
+                            this.closedTrades = data.closedTrades;
+                        }
+                        if (data.settings) {
+                            this.settings = { ...this.settings, ...data.settings };
+                        }
+
+                        console.log('Data loaded successfully');
+                    } else {
+                        // Initialize with sample data for demo
+                        this.initializeSampleData();
+                    }
+                } catch (error) {
+                    console.error('Load error:', error);
+                    this.showNotification('Error loading data - starting fresh', 'error');
+                    this.initializeSampleData();
+                }
+            }
+
+            initializeSampleData() {
+                // Add sample trades for demonstration
+                const sampleTrades = [
+                    {
+                        id: 'DFH-001',
+                        symbol: 'DFH',
+                        type: 'stock',
+                        quantity: 100,
+                        entryPrice: 22.50,
+                        currentPrice: 24.75,
+                        openDate: '2024-01-15',
+                        status: 'active',
+                        notes: 'Dividend aristocrat pick'
+                    },
+                    {
+                        id: 'AAPL-CC-001',
+                        symbol: 'AAPL',
+                        type: 'cc',
+                        quantity: 1,
+                        entryPrice: 2.85,
+                        currentPrice: 1.20,
+                        strikePrice: 190,
+                        expiration: '2024-03-15',
+                        openDate: '2024-02-01',
+                        status: 'active',
+                        notes: 'March covered call'
+                    }
+                ];
+
+                sampleTrades.forEach(trade => {
+                    this.trades.set(trade.id, trade);
+                });
+            }
+
+            // Export/Import Methods
+            exportData() {
+                try {
+                    const data = {
+                        trades: Array.from(this.trades.entries()),
+                        closedTrades: this.closedTrades,
+                        settings: this.settings,
+                        exportDate: new Date().toISOString(),
+                        version: '1.0.0'
+                    };
+
+                    const blob = new Blob([JSON.stringify(data, null, 2)], {
+                        type: 'application/json'
+                    });
+
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `wheel-strategy-data-${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    this.showNotification('Data exported successfully', 'success');
+                } catch (error) {
+                    console.error('Export error:', error);
+                    this.showNotification('Error exporting data', 'error');
+                }
+            }
+
+            importData() {
+                document.getElementById('importFile').click();
+            }
+
+            handleImportFile(input) {
+                const file = input.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+
+                        // Validate imported data
+                        if (data.trades && Array.isArray(data.trades)) {
+                            this.trades = new Map(data.trades);
+                        }
+                        if (data.closedTrades && Array.isArray(data.closedTrades)) {
+                            this.closedTrades = data.closedTrades;
+                        }
+                        if (data.settings) {
+                            this.settings = { ...this.settings, ...data.settings };
+                        }
+
+                        this.saveData();
+                        this.renderDashboard();
+                        this.showNotification('Data imported successfully', 'success');
+                    } catch (error) {
+                        console.error('Import error:', error);
+                        this.showNotification('Error importing data - invalid file format', 'error');
+                    }
+                };
+                reader.readAsText(file);
+
+                // Reset input
+                input.value = '';
+            }
+
+            // Backup/Restore Methods
+            createBackup() {
+                const backupData = {
+                    trades: Array.from(this.trades.entries()),
+                    closedTrades: this.closedTrades,
+                    settings: this.settings,
+                    backupDate: new Date().toISOString(),
+                    version: '1.0.0',
+                    metadata: {
+                        totalTrades: this.trades.size,
+                        closedTradesCount: this.closedTrades.length,
+                        totalValue: this.calculatePortfolioValue()
+                    }
+                };
+
+                const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+                    type: 'application/json'
+                });
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `wheel-strategy-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                this.showNotification('Backup created successfully', 'success');
+                this.closeModal('backupModal');
+            }
+
+            restoreBackup() {
+                const fileInput = document.getElementById('restoreFile');
+                const file = fileInput.files[0];
+
+                if (!file) {
+                    this.showNotification('Please select a backup file', 'error');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const backupData = JSON.parse(e.target.result);
+
+                        // Validate backup data
+                        if (backupData.trades && backupData.closedTrades) {
+                            this.trades = new Map(backupData.trades);
+                            this.closedTrades = backupData.closedTrades;
+                            if (backupData.settings) {
+                                this.settings = { ...this.settings, ...backupData.settings };
+                            }
+
+                            this.saveData();
+                            this.renderDashboard();
+                            this.showNotification('Backup restored successfully', 'success');
+                            this.closeModal('backupModal');
+                        } else {
+                            throw new Error('Invalid backup file format');
+                        }
+                    } catch (error) {
+                        console.error('Restore error:', error);
+                        this.showNotification('Error restoring backup - invalid file', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            // P&L Calculation Methods
+            calculatePortfolioMetrics() {
+                let totalValue = 0;
+                let totalCost = 0;
+                let realizedPnL = 0;
+                let unrealizedPnL = 0;
+                let dailyPnL = 0;
+
+                // Calculate metrics for active positions
+                this.trades.forEach(trade => {
+                    const cost = trade.entryPrice * trade.quantity;
+                    const currentValue = trade.currentPrice * trade.quantity;
+
+                    totalCost += Math.abs(cost);
+
+                    if (trade.type === 'stock') {
+                        totalValue += currentValue;
+                        unrealizedPnL += currentValue - cost;
+                    } else if (trade.type === 'cc' || trade.type === 'csp') {
+                        // For options, entry price is premium received (positive)
+                        // Current price is cost to close (negative if buying back)
+                        unrealizedPnL += cost - (trade.currentPrice * trade.quantity);
+                        totalValue += cost; // Premium received
+                    }
+                });
+
+                // Calculate realized P&L from closed trades
+                this.closedTrades.forEach(trade => {
+                    if (trade.realizedPnL) {
+                        realizedPnL += trade.realizedPnL;
+                    }
+                });
+
+                const totalPnL = realizedPnL + unrealizedPnL;
+                const pnlPercentage = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
+
+                return {
+                    totalValue,
+                    totalCost,
+                    realizedPnL,
+                    unrealizedPnL,
+                    totalPnL,
+                    pnlPercentage,
+                    dailyPnL,
+                    activePositions: this.trades.size,
+                    closedPositions: this.closedTrades.length
+                };
+            }
+
+            calculatePortfolioValue() {
+                let value = 0;
+                this.trades.forEach(trade => {
+                    if (trade.type === 'stock') {
+                        value += trade.currentPrice * trade.quantity;
+                    } else {
+                        value += trade.entryPrice * trade.quantity;
+                    }
+                });
+                return value;
+            }
+
+            // Rendering Methods
+            renderDashboard() {
+                this.renderMetrics();
+                this.renderActiveTrades();
+                this.renderClosedTrades();
+                this.updateCounts();
+            }
+
+            renderMetrics() {
+                const metrics = this.calculatePortfolioMetrics();
+                const metricsContainer = document.getElementById('portfolioMetrics');
+
+                metricsContainer.innerHTML = `
+                    <div class="metric-card">
+                        <div class="metric-value ${metrics.totalPnL >= 0 ? 'metric-positive' : 'metric-negative'}">
+                            $${metrics.totalPnL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div class="metric-label">Total P&L</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-value ${metrics.unrealizedPnL >= 0 ? 'metric-positive' : 'metric-negative'}">
+                            $${metrics.unrealizedPnL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div class="metric-label">Unrealized P&L</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-value ${metrics.realizedPnL >= 0 ? 'metric-positive' : 'metric-negative'}">
+                            $${metrics.realizedPnL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div class="metric-label">Realized P&L</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-value metric-neutral">
+                            $${metrics.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div class="metric-label">Portfolio Value</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-value ${metrics.pnlPercentage >= 0 ? 'metric-positive' : 'metric-negative'}">
+                            ${metrics.pnlPercentage.toFixed(2)}%
+                        </div>
+                        <div class="metric-label">Return %</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-value metric-neutral">
+                            ${metrics.activePositions}
+                        </div>
+                        <div class="metric-label">Active Positions</div>
+                    </div>
+                `;
+            }
+
+            renderActiveTrades() {
+                const container = document.getElementById('activeTradesGrid');
+                const activeTrades = Array.from(this.trades.values()).filter(trade => trade.status === 'active');
+
+                if (activeTrades.length === 0) {
+                    container.innerHTML = '<p class="text-center">No active positions</p>';
+                    return;
+                }
+
+                container.innerHTML = activeTrades.map(trade => this.createTradeCard(trade)).join('');
+            }
+
+            renderClosedTrades() {
+                const container = document.getElementById('closedTradesGrid');
+
+                if (this.closedTrades.length === 0) {
+                    container.innerHTML = '<p class="text-center">No closed positions</p>';
+                    return;
+                }
+
+                container.innerHTML = this.closedTrades.map(trade => this.createTradeCard(trade)).join('');
+            }
+
+            createTradeCard(trade) {
+                const pnl = this.calculateTradePnL(trade);
+                const pnlClass = pnl >= 0 ? 'metric-positive' : 'metric-negative';
+
+                const tradeTypeDisplay = {
+                    'stock': 'Stock',
+                    'csp': 'Cash Secured Put',
+                    'cc': 'Covered Call',
+                    'long_call': 'Long Call',
+                    'long_put': 'Long Put'
+                };
+
+                return `
+                    <div class="trade-card">
+                        <div class="trade-header">
+                            <div class="trade-symbol">${trade.symbol}</div>
+                            <div class="trade-status status-${trade.status}">${trade.status}</div>
+                        </div>
+
+                        <div class="trade-details">
+                            <div><strong>Type:</strong> ${tradeTypeDisplay[trade.type] || trade.type}</div>
+                            <div><strong>Quantity:</strong> ${trade.quantity}</div>
+                            <div><strong>Entry:</strong> $${trade.entryPrice.toFixed(2)}</div>
+                            <div><strong>Current:</strong> $${trade.currentPrice.toFixed(2)}</div>
+                            ${trade.strikePrice ? `<div><strong>Strike:</strong> $${trade.strikePrice.toFixed(2)}</div>` : ''}
+                            ${trade.expiration ? `<div><strong>Expiration:</strong> ${trade.expiration}</div>` : ''}
+                            <div class="trade-pnl ${pnlClass}"><strong>P&L:</strong> $${pnl.toFixed(2)}</div>
+                            ${trade.notes ? `<div class="trade-notes"><em>${trade.notes}</em></div>` : ''}
+                        </div>
+
+                        <div class="trade-actions" style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button class="btn btn-secondary" onclick="manager.editTrade('${trade.id}')" style="font-size: 12px; padding: 8px 12px;">
+                                ✏️ Edit
+                            </button>
+                            ${trade.status === 'active' ? `
+                                <button class="btn btn-danger" onclick="manager.closeTrade('${trade.id}')" style="font-size: 12px; padding: 8px 12px;">
+                                    ❌ Close
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            calculateTradePnL(trade) {
+                if (trade.status === 'closed' && trade.realizedPnL !== undefined) {
+                    return trade.realizedPnL;
+                }
+
+                const cost = trade.entryPrice * trade.quantity;
+                const currentValue = trade.currentPrice * trade.quantity;
+
+                if (trade.type === 'stock') {
+                    return currentValue - cost;
+                } else if (trade.type === 'cc' || trade.type === 'csp') {
+                    // For options: premium received minus current cost to close
+                    return cost - currentValue;
+                }
+
+                return currentValue - cost;
+            }
+
+            // Trade Management Methods
+            showAddTradeModal() {
+                document.getElementById('addTradeModal').classList.add('show');
+                document.getElementById('tradeType').focus();
+            }
+
+            closeModal(modalId) {
+                document.getElementById(modalId).classList.remove('show');
+            }
+
+            showBackupModal() {
+                document.getElementById('backupModal').classList.add('show');
+            }
+
+            // Auto-save Setup
+            setupAutoSave() {
+                if (this.settings.autoSave) {
+                    this.autoSaveInterval = setInterval(() => {
+                        this.saveData();
+                    }, 30000); // Auto-save every 30 seconds
+                }
+            }
+
+            // Event Listeners
+            setupEventListeners() {
+                // Trade form submission
+                document.getElementById('addTradeForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleAddTrade();
+                });
+
+                // Trade type change (show/hide options fields)
+                document.getElementById('tradeType').addEventListener('change', (e) => {
+                    const optionsFields = document.getElementById('optionsFields');
+                    const isOptions = ['cc', 'csp', 'long_call', 'long_put'].includes(e.target.value);
+                    optionsFields.style.display = isOptions ? 'block' : 'none';
+                });
+
+                // Modal click outside to close
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('modal')) {
+                        e.target.classList.remove('show');
+                    }
+                });
+
+                // Escape key to close modals
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        document.querySelectorAll('.modal.show').forEach(modal => {
+                            modal.classList.remove('show');
+                        });
+                    }
+                });
+            }
+
+            handleAddTrade() {
+                const formData = new FormData(document.getElementById('addTradeForm'));
+                const trade = {
+                    id: this.generateTradeId(),
+                    symbol: document.getElementById('symbol').value.toUpperCase(),
+                    type: document.getElementById('tradeType').value,
+                    quantity: parseInt(document.getElementById('quantity').value),
+                    entryPrice: parseFloat(document.getElementById('entryPrice').value),
+                    currentPrice: parseFloat(document.getElementById('currentPrice').value),
+                    openDate: new Date().toISOString().split('T')[0],
+                    status: 'active',
+                    notes: document.getElementById('notes').value
+                };
+
+                // Add options-specific fields if applicable
+                if (['cc', 'csp', 'long_call', 'long_put'].includes(trade.type)) {
+                    trade.strikePrice = parseFloat(document.getElementById('strikePrice').value);
+                    trade.expiration = document.getElementById('expiration').value;
+                }
+
+                this.trades.set(trade.id, trade);
+                this.saveData();
+                this.renderDashboard();
+                this.closeModal('addTradeModal');
+                this.showNotification('Trade added successfully', 'success');
+
+                // Reset form
+                document.getElementById('addTradeForm').reset();
+            }
+
+            generateTradeId() {
+                return `trade_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            }
+
+            // Keyboard Shortcuts
+            setupKeyboardShortcuts() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch (e.key.toLowerCase()) {
+                            case 'n':
+                                e.preventDefault();
+                                this.showAddTradeModal();
+                                break;
+                            case 'e':
+                                e.preventDefault();
+                                this.exportData();
+                                break;
+                            case 'i':
+                                e.preventDefault();
+                                this.importData();
+                                break;
+                            case 'p':
+                                e.preventDefault();
+                                window.print();
+                                break;
+                        }
+                    }
+                });
+            }
+
+            toggleKeyboardShortcuts() {
+                const shortcuts = document.getElementById('keyboardShortcuts');
+                this.keyboardShortcutsVisible = !this.keyboardShortcutsVisible;
+                shortcuts.classList.toggle('show', this.keyboardShortcutsVisible);
+            }
+
+            // Notification System
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `notification notification-${type}`;
+                notification.textContent = message;
+
+                document.body.appendChild(notification);
+
+                // Show notification
+                setTimeout(() => notification.classList.add('show'), 100);
+
+                // Hide and remove notification
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => document.body.removeChild(notification), 300);
+                }, 3000);
+            }
+
+            updateCounts() {
+                document.getElementById('activePositionsCount').textContent = this.trades.size;
+                document.getElementById('closedPositionsCount').textContent = this.closedTrades.length;
+            }
+
+            // Trade Management
+            editTrade(tradeId) {
+                const trade = this.trades.get(tradeId);
+                if (!trade) return;
+
+                // Populate form with trade data
+                document.getElementById('symbol').value = trade.symbol;
+                document.getElementById('tradeType').value = trade.type;
+                document.getElementById('quantity').value = trade.quantity;
+                document.getElementById('entryPrice').value = trade.entryPrice;
+                document.getElementById('currentPrice').value = trade.currentPrice;
+                document.getElementById('notes').value = trade.notes || '';
+
+                if (trade.strikePrice) {
+                    document.getElementById('strikePrice').value = trade.strikePrice;
+                }
+                if (trade.expiration) {
+                    document.getElementById('expiration').value = trade.expiration;
+                }
+
+                // Show/hide options fields
+                const optionsFields = document.getElementById('optionsFields');
+                const isOptions = ['cc', 'csp', 'long_call', 'long_put'].includes(trade.type);
+                optionsFields.style.display = isOptions ? 'block' : 'none';
+
+                // Change form behavior to edit mode
+                const form = document.getElementById('addTradeForm');
+                form.dataset.editingId = tradeId;
+                document.querySelector('.modal-title').textContent = 'Edit Trade';
+
+                this.showAddTradeModal();
+            }
+
+            closeTrade(tradeId) {
+                const trade = this.trades.get(tradeId);
+                if (!trade) return;
+
+                const closePrice = prompt(`Enter closing price for ${trade.symbol}:`, trade.currentPrice);
+                if (closePrice === null) return;
+
+                const closedTrade = {
+                    ...trade,
+                    status: 'closed',
+                    closeDate: new Date().toISOString().split('T')[0],
+                    closePrice: parseFloat(closePrice),
+                    realizedPnL: this.calculateClosePnL(trade, parseFloat(closePrice))
+                };
+
+                this.closedTrades.push(closedTrade);
+                this.trades.delete(tradeId);
+
+                this.saveData();
+                this.renderDashboard();
+                this.showNotification(`${trade.symbol} position closed`, 'success');
+            }
+
+            calculateClosePnL(trade, closePrice) {
+                const cost = trade.entryPrice * trade.quantity;
+                const closeValue = closePrice * trade.quantity;
+
+                if (trade.type === 'stock') {
+                    return closeValue - cost;
+                } else if (trade.type === 'cc' || trade.type === 'csp') {
+                    return cost - closeValue;
+                }
+
+                return closeValue - cost;
+            }
+        }
+
+        // Initialize the application
+        let manager;
+        document.addEventListener('DOMContentLoaded', () => {
+            manager = new WheelStrategyManager();
+        });
+    </script>
+</body>
+</html>
