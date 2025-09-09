@@ -1,93 +1,9 @@
 {
   "version": 2,
-  "name": "wheel-strategy-manager-pro",
-  "builds": [
-    {
-      "src": "public/**/*",
-      "use": "@vercel/static"
-    }
-  ],
   "routes": [
     {
-      "src": "/manifest.json",
-      "dest": "public/manifest.json",
-      "headers": {
-        "Content-Type": "application/manifest+json"
-      }
-    },
-    {
-      "src": "/",
-      "dest": "public/index.html"
-    },
-    {
       "src": "/(.*)",
-      "dest": "public/$1"
+      "dest": "/index.html"
     }
-  ],
-  "functions": {
-    "public/index.html": {
-      "maxDuration": 10
-    }
-  },
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=()"
-        }
-      ]
-    },
-    {
-      "source": "/manifest.json",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/manifest+json"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=86400"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)\\.(js|css|svg|png|jpg|jpeg|gif|ico|woff|woff2)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)\\.(html|json)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  ]
 }
