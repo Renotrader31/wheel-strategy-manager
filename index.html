@@ -1050,6 +1050,34 @@
             unrealizedPL: 402,
             totalPL: 402,
             closedTrades: [],
+            activeTrades: {
+                'DFH': {
+                    symbol: 'DFH',
+                    capital: 10000,
+                    strategy: 'stock',
+                    createdAt: new Date().toISOString(),
+                    positions: {
+                        'dfh-stock': {
+                            type: 'stock',
+                            symbol: 'DFH',
+                            shares: 300,
+                            costBasis: 31.00,
+                            currentPrice: 30.99,
+                            status: 'open'
+                        },
+                        'dfh-call': {
+                            type: 'call',
+                            symbol: 'DFH',
+                            strike: 32.50,
+                            expiration: '2025-10-17',
+                            contracts: 3,
+                            premiumReceived: 1.35,
+                            totalPremium: 405.00,
+                            status: 'open'
+                        }
+                    }
+                }
+            },
             openPositions: {
                 'dfh-stock': {
                     type: 'stock',
@@ -1484,17 +1512,353 @@
         }
 
         function submitNewTrade() {
-            const symbol = document.getElementById('newTradeSymbol').value;
+            const symbol = document.getElementById('newTradeSymbol').value.trim().toUpperCase();
             const strategy = document.getElementById('newTradeStrategy').value;
-            const capital = document.getElementById('newTradeCapital').value;
+            const capital = parseFloat(document.getElementById('newTradeCapital').value);
 
             if (symbol && strategy && capital) {
-                alert('New trade created for ' + symbol + ' with ' + strategy + ' strategy and $' + capital + ' capital');
+                // Check if trade already exists
+                if (portfolioState.activeTrades[symbol]) {
+                    alert('A trade for ' + symbol + ' already exists. Please add positions to the existing trade or use a different symbol.');
+                    return;
+                }
+
+                // Create new trade
+                const newTrade = {
+                    symbol: symbol,
+                    capital: capital,
+                    strategy: strategy,
+                    createdAt: new Date().toISOString(),
+                    positions: {}
+                };
+
+                // Add to portfolio state
+                portfolioState.activeTrades[symbol] = newTrade;
+
+                // Create initial position based on strategy
+                if (strategy === 'stock') {
+                    // For direct stock purchase, we'd typically need more info
+                    // For now, create a placeholder that user can edit
+                    const stockPositionId = symbol.toLowerCase() + '-stock';
+                    const stockPosition = {
+                        type: 'stock',
+                        symbol: symbol,
+                        shares: 0,
+                        costBasis: 0,
+                        currentPrice: 0,
+                        status: 'open'
+                    };
+                    
+                    newTrade.positions[stockPositionId] = stockPosition;
+                    portfolioState.openPositions[stockPositionId] = stockPosition;
+                } else if (strategy === 'csp') {
+                    // For CSP strategy, create a CSP position placeholder
+                    const cspPositionId = symbol.toLowerCase() + '-csp';
+                    const cspPosition = {
+                        type: 'csp',
+                        symbol: symbol,
+                        strike: 0,
+                        expiration: '',
+                        contracts: 0,
+                        premiumReceived: 0,
+                        totalPremium: 0,
+                        status: 'open'
+                    };
+                    
+                    newTrade.positions[cspPositionId] = cspPosition;
+                    portfolioState.openPositions[cspPositionId] = cspPosition;
+                }
+
+                // Save to localStorage
+                savePortfolioState();
+
+                // Render the new trade on the dashboard
+                renderTrade(symbol, newTrade);
+
+                // Update metrics
+                updatePLMetrics();
+
+                // Show success message
+                showNotification('Trade created successfully for ' + symbol + '!', 'success');
+
+                // Clear form and close modal
+                document.getElementById('newTradeForm').reset();
                 closeModal('newTradeModal');
             } else {
                 alert('Please fill in all required fields');
             }
         }
+
+        function renderTrade(symbol, trade) {
+            const tradeContainer = document.querySelector('.section-title + div') || 
+                                 document.querySelector('#dashboard-tab');
+            
+            // Find the active trades section
+            let activeTradesSection = document.querySelector('h2.section-title');
+            if (!activeTradesSection) return;
+            
+            // Create trade card HTML
+            const tradeCard = document.createElement('div');
+            tradeCard.className = 'trade-card';
+            tradeCard.id = symbol.toLowerCase() + '-trade';
+            tradeCard.setAttribute('data-symbol', symbol);
+
+            let positionsHTML = '';
+            
+            // Generate positions HTML based on trade positions
+            for (const [positionId, position] of Object.entries(trade.positions)) {
+                if (position.type === 'stock') {
+                    positionsHTML += generateStockPositionHTML(positionId, position);
+                } else if (position.type === 'csp') {
+                    positionsHTML += generateCSPPositionHTML(positionId, position);
+                } else if (position.type === 'call') {
+                    positionsHTML += generateCallPositionHTML(positionId, position);
+                }
+            }
+
+            tradeCard.innerHTML = `
+                <div class="trade-header">
+                    <div>
+                        <div class="trade-symbol">${symbol}</div>
+                        <div class="trade-subtitle">Wheel Strategy Position</div>
+                    </div>
+                    <div class="status-badge status-open">Active</div>
+                </div>
+                <div class="position-grid">
+                    ${positionsHTML}
+                    <!-- Add Position Section -->
+                    <div class="add-position-btn" onclick="openModal('addPositionModal', '${symbol}')">
+                        ➕ Add Cash-Secured Put or Additional Position
+                    </div>
+                </div>
+            `;
+
+            // Insert after the existing DFH trade or after the Active Trades section
+            const existingTrade = document.querySelector('.trade-card');
+            if (existingTrade && existingTrade.nextSibling) {
+                existingTrade.parentNode.insertBefore(tradeCard, existingTrade.nextSibling);
+            } else if (existingTrade) {
+                existingTrade.parentNode.appendChild(tradeCard);
+            } else {
+                activeTradesSection.parentNode.insertBefore(tradeCard, activeTradesSection.nextSibling);
+            }
+        }
+
+        function generateStockPositionHTML(positionId, position) {
+            return `
+                <div class="position-section stock" id="${positionId}-section" data-status="open">
+                    <div class="position-title">
+                        📈 Stock Position
+                        <button class="btn btn-sm btn-edit" onclick="editPosition('${positionId}')">
+                            ✏️ Edit
+                        </button>
+                    </div>
+                    <div class="position-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Shares</div>
+                            <div class="detail-value" id="${positionId}-shares">${position.shares}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Cost Basis</div>
+                            <div class="detail-value" id="${positionId}-cost-basis">$${position.costBasis.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Current Price</div>
+                            <div class="detail-value" contenteditable="true" id="${positionId}-current-price" 
+                                 style="background: #f8fafc; padding: 4px 8px; border-radius: 4px; cursor: text;">
+                                 $${position.currentPrice.toFixed(2)}
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Total Value</div>
+                            <div class="detail-value" id="${positionId}-total-value">$${(position.shares * position.currentPrice).toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Unrealized P&L</div>
+                            <div class="detail-value" id="${positionId}-pl">$${((position.currentPrice - position.costBasis) * position.shares).toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Position Status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-open" id="${positionId}-status">Open</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="position-actions">
+                        <button class="btn btn-sm btn-edit" onclick="editPosition('${positionId}')">✏️ Edit</button>
+                        <button class="btn btn-sm btn-close" onclick="openCloseModal('${positionId}', 'stock')">🔒 Close Position</button>
+                        <button class="btn btn-sm btn-success" onclick="openModal('newCoveredCallModal', '${position.symbol}')">📞 Add Covered Call</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateCSPPositionHTML(positionId, position) {
+            return `
+                <div class="position-section csp" id="${positionId}-section" data-status="open">
+                    <div class="position-title">
+                        💰 Cash-Secured Put
+                        <button class="btn btn-sm btn-edit" onclick="editPosition('${positionId}')">
+                            ✏️ Edit
+                        </button>
+                    </div>
+                    <div class="position-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Strike Price</div>
+                            <div class="detail-value" id="${positionId}-strike">$${position.strike.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Expiration</div>
+                            <div class="detail-value" id="${positionId}-expiration">${position.expiration}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Contracts</div>
+                            <div class="detail-value" id="${positionId}-contracts">${position.contracts}x</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Premium Collected</div>
+                            <div class="detail-value" id="${positionId}-premium">$${position.premiumReceived.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Total Premium</div>
+                            <div class="detail-value profit-positive" id="${positionId}-total">$${position.totalPremium.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Position Status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-open" id="${positionId}-status">Open</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="position-actions">
+                        <button class="btn btn-sm btn-edit" onclick="editPosition('${positionId}')">✏️ Edit</button>
+                        <button class="btn btn-sm btn-delete" onclick="deletePosition('${positionId}')">🗑 Delete</button>
+                        <button class="btn btn-sm btn-close" onclick="openCloseModal('${positionId}', 'csp')">🔒 Close Position</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateCallPositionHTML(positionId, position) {
+            return `
+                <div class="position-section call" id="${positionId}-section" data-status="open">
+                    <div class="position-title">
+                        📞 Covered Calls
+                        <button class="btn btn-sm btn-success" onclick="openModal('newCoveredCallModal', '${position.symbol}')">
+                            ➕ Add Call
+                        </button>
+                    </div>
+                    <div class="position-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Strike Price</div>
+                            <div class="detail-value" id="${positionId}-strike">$${position.strike.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Expiration</div>
+                            <div class="detail-value" id="${positionId}-expiration">${position.expiration}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Contracts</div>
+                            <div class="detail-value" id="${positionId}-contracts">${position.contracts}x</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Premium Collected</div>
+                            <div class="detail-value" id="${positionId}-premium">$${position.premiumReceived.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Total Premium</div>
+                            <div class="detail-value profit-positive" id="${positionId}-total">$${position.totalPremium.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Position Status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-open" id="${positionId}-status">Open</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="position-actions">
+                        <button class="btn btn-sm btn-edit" onclick="editPosition('${positionId}')">✏️ Edit</button>
+                        <button class="btn btn-sm btn-delete" onclick="deletePosition('${positionId}')">🗑 Delete</button>
+                        <button class="btn btn-sm btn-close" onclick="openCloseModal('${positionId}', 'call')">🔒 Close Position</button>
+                        <button class="btn btn-sm btn-expire" onclick="expirePosition('${positionId}')">⏰ Mark Expired</button>
+                        <button class="btn btn-sm btn-roll" onclick="rollPosition('${positionId}')">🔄 Roll</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function savePortfolioState() {
+            try {
+                localStorage.setItem('wheelStrategyPortfolio', JSON.stringify(portfolioState));
+            } catch (error) {
+                console.error('Failed to save portfolio state:', error);
+                alert('Failed to save data to browser storage. Please try again.');
+            }
+        }
+
+        function loadPortfolioState() {
+            try {
+                const saved = localStorage.getItem('wheelStrategyPortfolio');
+                if (saved) {
+                    const loadedState = JSON.parse(saved);
+                    // Merge with default state to ensure all properties exist
+                    portfolioState = { ...portfolioState, ...loadedState };
+                    
+                    // Render all active trades
+                    for (const [symbol, trade] of Object.entries(portfolioState.activeTrades || {})) {
+                        if (symbol !== 'DFH') { // DFH is already rendered in HTML
+                            renderTrade(symbol, trade);
+                        }
+                    }
+                    
+                    // Update metrics
+                    updatePLMetrics();
+                }
+            } catch (error) {
+                console.error('Failed to load portfolio state:', error);
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 10000;
+                max-width: 300px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            `;
+            
+            if (type === 'success') {
+                notification.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+            } else if (type === 'error') {
+                notification.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+            } else {
+                notification.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+            }
+            
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', function() {
+            loadPortfolioState();
+        });
 
         function submitPosition() {
             const positionType = document.getElementById('positionType').value;
