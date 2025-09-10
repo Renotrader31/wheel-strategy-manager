@@ -1043,6 +1043,97 @@
             </form>
         </div>
     </div>
+
+    <!-- Edit Position Modal -->
+    <div id="editPositionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">✏️ Edit Position: <span id="editPositionSymbol">WULF</span></h2>
+                <span class="close" onclick="closeModal('editPositionModal')">&times;</span>
+            </div>
+            <form id="editPositionForm">
+                <input type="hidden" id="editPositionId" />
+                <input type="hidden" id="editPositionType" />
+
+                <!-- Common fields for all position types -->
+                <div class="form-group">
+                    <label class="form-label">Position Type</label>
+                    <input type="text" class="form-control" id="editPositionTypeDisplay" readonly style="background: #f1f5f9;">
+                </div>
+
+                <!-- Stock Position Fields -->
+                <div id="editStockFields" class="form-section" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Number of Shares</label>
+                            <input type="number" class="form-control" id="editShares" placeholder="100" min="0" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cost Basis per Share</label>
+                            <input type="number" class="form-control" id="editCostBasis" placeholder="50.00" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Current Price per Share</label>
+                        <input type="number" class="form-control" id="editCurrentPrice" placeholder="52.50" min="0" step="0.01">
+                    </div>
+                </div>
+
+                <!-- CSP Position Fields -->
+                <div id="editCSPFields" class="form-section" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Strike Price</label>
+                            <input type="number" class="form-control" id="editCSPStrike" placeholder="45.00" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Expiration Date</label>
+                            <input type="date" class="form-control" id="editCSPExpiration">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Number of Contracts</label>
+                            <input type="number" class="form-control" id="editCSPContracts" placeholder="2" min="1" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Premium Received per Contract</label>
+                            <input type="number" class="form-control" id="editCSPPremium" placeholder="1.50" min="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Call Position Fields -->
+                <div id="editCallFields" class="form-section" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Strike Price</label>
+                            <input type="number" class="form-control" id="editCallStrike" placeholder="55.00" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Expiration Date</label>
+                            <input type="date" class="form-control" id="editCallExpiration">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Number of Contracts</label>
+                            <input type="number" class="form-control" id="editCallContracts" placeholder="2" min="1" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Premium Received per Contract</label>
+                            <input type="number" class="form-control" id="editCallPremium" placeholder="2.00" min="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="position-actions" style="margin-top: 25px;">
+                    <button type="button" class="btn btn-primary" onclick="submitEditPosition()">💾 Save Changes</button>
+                    <button type="button" class="btn" style="background: #6b7280;" onclick="closeModal('editPositionModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <script>
         // Global state management
         let portfolioState = {
@@ -1487,7 +1578,171 @@
 
         // Other position management functions
         function editPosition(positionId) {
-            alert('Edit functionality for ' + positionId + ' - Edit modal would open here with current position data');
+            // Get position data from portfolioState
+            const position = portfolioState.openPositions[positionId];
+            
+            if (!position) {
+                alert('Position not found');
+                return;
+            }
+
+            // Set position ID and type in the modal
+            document.getElementById('editPositionId').value = positionId;
+            document.getElementById('editPositionType').value = position.type;
+            document.getElementById('editPositionSymbol').textContent = position.symbol;
+            document.getElementById('editPositionTypeDisplay').value = position.type.toUpperCase();
+
+            // Hide all form sections first
+            document.getElementById('editStockFields').style.display = 'none';
+            document.getElementById('editCSPFields').style.display = 'none';
+            document.getElementById('editCallFields').style.display = 'none';
+
+            // Show and populate appropriate form section based on position type
+            if (position.type === 'stock') {
+                document.getElementById('editStockFields').style.display = 'block';
+                document.getElementById('editShares').value = position.shares || 0;
+                document.getElementById('editCostBasis').value = position.costBasis || 0;
+                document.getElementById('editCurrentPrice').value = position.currentPrice || 0;
+            } else if (position.type === 'csp') {
+                document.getElementById('editCSPFields').style.display = 'block';
+                document.getElementById('editCSPStrike').value = position.strike || 0;
+                document.getElementById('editCSPExpiration').value = position.expiration || '';
+                document.getElementById('editCSPContracts').value = position.contracts || 0;
+                document.getElementById('editCSPPremium').value = position.premiumReceived || 0;
+            } else if (position.type === 'call') {
+                document.getElementById('editCallFields').style.display = 'block';
+                document.getElementById('editCallStrike').value = position.strike || 0;
+                document.getElementById('editCallExpiration').value = position.expiration || '';
+                document.getElementById('editCallContracts').value = position.contracts || 0;
+                document.getElementById('editCallPremium').value = position.premiumReceived || 0;
+            }
+
+            // Open the edit modal
+            openModal('editPositionModal');
+        }
+
+        function submitEditPosition() {
+            const positionId = document.getElementById('editPositionId').value;
+            const positionType = document.getElementById('editPositionType').value;
+            
+            // Get the position from portfolioState
+            const position = portfolioState.openPositions[positionId];
+            
+            if (!position) {
+                alert('Position not found');
+                return;
+            }
+
+            // Update position data based on type
+            let isValid = true;
+            
+            if (positionType === 'stock') {
+                const shares = parseFloat(document.getElementById('editShares').value);
+                const costBasis = parseFloat(document.getElementById('editCostBasis').value);
+                const currentPrice = parseFloat(document.getElementById('editCurrentPrice').value);
+                
+                if (isNaN(shares) || isNaN(costBasis) || isNaN(currentPrice) || 
+                    shares < 0 || costBasis < 0 || currentPrice < 0) {
+                    alert('Please enter valid positive numbers for all fields');
+                    isValid = false;
+                } else {
+                    position.shares = shares;
+                    position.costBasis = costBasis;
+                    position.currentPrice = currentPrice;
+                }
+            } else if (positionType === 'csp') {
+                const strike = parseFloat(document.getElementById('editCSPStrike').value);
+                const expiration = document.getElementById('editCSPExpiration').value;
+                const contracts = parseInt(document.getElementById('editCSPContracts').value);
+                const premium = parseFloat(document.getElementById('editCSPPremium').value);
+                
+                if (isNaN(strike) || !expiration || isNaN(contracts) || isNaN(premium) ||
+                    strike <= 0 || contracts < 1 || premium < 0) {
+                    alert('Please enter valid values for all fields');
+                    isValid = false;
+                } else {
+                    position.strike = strike;
+                    position.expiration = expiration;
+                    position.contracts = contracts;
+                    position.premiumReceived = premium;
+                    position.totalPremium = premium * contracts * 100; // Options are per 100 shares
+                }
+            } else if (positionType === 'call') {
+                const strike = parseFloat(document.getElementById('editCallStrike').value);
+                const expiration = document.getElementById('editCallExpiration').value;
+                const contracts = parseInt(document.getElementById('editCallContracts').value);
+                const premium = parseFloat(document.getElementById('editCallPremium').value);
+                
+                if (isNaN(strike) || !expiration || isNaN(contracts) || isNaN(premium) ||
+                    strike <= 0 || contracts < 1 || premium < 0) {
+                    alert('Please enter valid values for all fields');
+                    isValid = false;
+                } else {
+                    position.strike = strike;
+                    position.expiration = expiration;
+                    position.contracts = contracts;
+                    position.premiumReceived = premium;
+                    position.totalPremium = premium * contracts * 100; // Options are per 100 shares
+                }
+            }
+            
+            if (isValid) {
+                // Update the active trade's positions as well
+                for (const [symbol, trade] of Object.entries(portfolioState.activeTrades || {})) {
+                    if (trade.positions && trade.positions[positionId]) {
+                        trade.positions[positionId] = { ...position };
+                        break;
+                    }
+                }
+                
+                // Save to localStorage
+                savePortfolioState();
+                
+                // Update the display
+                updatePositionDisplay(positionId, position);
+                
+                // Update P&L metrics
+                updatePLMetrics();
+                
+                // Show success notification
+                showNotification('Position updated successfully!', 'success');
+                
+                // Close modal
+                closeModal('editPositionModal');
+            }
+        }
+
+        function updatePositionDisplay(positionId, position) {
+            // Update the position display in the UI
+            if (position.type === 'stock') {
+                const sharesElement = document.getElementById(positionId + '-shares');
+                const costBasisElement = document.getElementById(positionId + '-cost-basis');
+                const currentPriceElement = document.getElementById(positionId + '-current-price');
+                const totalValueElement = document.getElementById(positionId + '-total-value');
+                const plElement = document.getElementById(positionId + '-pl');
+                
+                if (sharesElement) sharesElement.textContent = position.shares;
+                if (costBasisElement) costBasisElement.textContent = '$' + position.costBasis.toFixed(2);
+                if (currentPriceElement) currentPriceElement.textContent = '$' + position.currentPrice.toFixed(2);
+                if (totalValueElement) totalValueElement.textContent = '$' + (position.shares * position.currentPrice).toFixed(2);
+                if (plElement) {
+                    const pl = (position.currentPrice - position.costBasis) * position.shares;
+                    plElement.textContent = '$' + pl.toFixed(2);
+                    plElement.className = 'detail-value ' + (pl >= 0 ? 'profit-positive' : 'profit-negative');
+                }
+            } else if (position.type === 'csp' || position.type === 'call') {
+                const strikeElement = document.getElementById(positionId + '-strike');
+                const expirationElement = document.getElementById(positionId + '-expiration');
+                const contractsElement = document.getElementById(positionId + '-contracts');
+                const premiumElement = document.getElementById(positionId + '-premium');
+                const totalElement = document.getElementById(positionId + '-total');
+                
+                if (strikeElement) strikeElement.textContent = '$' + position.strike.toFixed(2);
+                if (expirationElement) expirationElement.textContent = position.expiration;
+                if (contractsElement) contractsElement.textContent = position.contracts + 'x';
+                if (premiumElement) premiumElement.textContent = '$' + position.premiumReceived.toFixed(2);
+                if (totalElement) totalElement.textContent = '$' + position.totalPremium.toFixed(2);
+            }
         }
 
         function deletePosition(positionId) {
