@@ -553,7 +553,7 @@
             <div class="logo-icon">🎯</div>
             <div class="logo-text">
                 <h1>Wheel Strategy Manager</h1>
-                <p>Advanced P&L Tracking</p>
+                <p>Advanced P&L Tracking + Current Price Editing v2.3</p>
             </div>
         </div>
         <div class="header-actions">
@@ -661,10 +661,10 @@
                             <div class="detail-item">
                                 <div class="detail-label">Current Price</div>
                                 <div class="detail-value" contenteditable="true" id="dfh-current-price" 
-                                     style="background: #f8fafc; padding: 4px 8px; border-radius: 4px; cursor: text;"
+                                     style="background: #e3f2fd; padding: 4px 8px; border-radius: 4px; cursor: text; border: 2px dashed #2196f3;"
                                      onblur="saveCurrentPrice('dfh-stock')" onkeydown="if(event.key==='Enter'){this.blur()}"
-                                     title="Click to edit price - SAVES AUTOMATICALLY">
-                                     $30.99
+                                     title="✏️ EDITABLE: Click to edit price - SAVES AUTOMATICALLY">
+                                     $30.99 ✏️
                                 </div>
                             </div>
                             <div class="detail-item">
@@ -2040,9 +2040,10 @@
                         <div class="detail-item">
                             <div class="detail-label">Current Price</div>
                             <div class="detail-value" contenteditable="true" id="${positionId}-current-price" 
-                                 style="background: #f8fafc; padding: 4px 8px; border-radius: 4px; cursor: text;"
-                                 onblur="saveCurrentPrice('${positionId}')" onkeydown="if(event.key==='Enter'){this.blur()}">
-                                 $${position.currentPrice.toFixed(2)}
+                                 style="background: #e3f2fd; padding: 4px 8px; border-radius: 4px; cursor: text; border: 2px dashed #2196f3;"
+                                 onblur="saveCurrentPrice('${positionId}')" onkeydown="if(event.key==='Enter'){this.blur()}"
+                                 title="✏️ EDITABLE: Click to edit price - SAVES AUTOMATICALLY">
+                                 $${position.currentPrice.toFixed(2)} ✏️
                             </div>
                         </div>
                         <div class="detail-item">
