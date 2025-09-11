@@ -1285,21 +1285,64 @@
         }
 
         function updatePLMetrics() {
+            // Calculate realized P&L from all closed trades
+            let totalRealizedPL = 0;
+            if (portfolioState.closedTrades && portfolioState.closedTrades.length > 0) {
+                totalRealizedPL = portfolioState.closedTrades.reduce((sum, trade) => sum + (trade.realizedPL || 0), 0);
+            }
+            
+            // Calculate unrealized P&L from all open positions
+            let totalUnrealizedPL = 0;
+            let stockPLTotal = 0;
+            let optionsPLTotal = 0;
+            let totalCapitalDeployed = 0;
+            
+            // Iterate through all open positions to calculate unrealized P&L
+            for (const [positionId, position] of Object.entries(portfolioState.openPositions || {})) {
+                if (position.status !== 'open') continue;
+                
+                if (position.type === 'stock') {
+                    const stockPL = ((position.currentPrice || 0) - (position.costBasis || 0)) * (position.shares || 0);
+                    stockPLTotal += stockPL;
+                    totalUnrealizedPL += stockPL;
+                    totalCapitalDeployed += (position.costBasis || 0) * (position.shares || 0);
+                } else if (position.type === 'call' || position.type === 'csp') {
+                    const optionPL = position.totalPremium || 0;
+                    optionsPLTotal += optionPL;
+                    totalUnrealizedPL += optionPL;
+                    // For options, the capital is the margin requirement, but we'll count premium as positive
+                }
+            }
+            
+            // Also check activeTrades for additional capital calculations
+            if (portfolioState.activeTrades) {
+                for (const [symbol, trade] of Object.entries(portfolioState.activeTrades)) {
+                    if (!totalCapitalDeployed) {
+                        totalCapitalDeployed += trade.capital || 0;
+                    }
+                }
+            }
+            
+            // Update portfolioState with calculated values
+            portfolioState.realizedPL = totalRealizedPL;
+            portfolioState.unrealizedPL = totalUnrealizedPL;
+
+            // Update DOM elements
             const realizedElement = document.getElementById('realized-pl');
             const unrealizedElement = document.getElementById('unrealized-pl');
             const totalElement = document.getElementById('total-pl');
 
             if (realizedElement) {
-                realizedElement.textContent = '$' + portfolioState.realizedPL.toFixed(2);
-                realizedElement.className = 'metric-value ' + (portfolioState.realizedPL >= 0 ? 'profit-positive' : 'profit-negative');
+                realizedElement.textContent = '$' + totalRealizedPL.toFixed(2);
+                realizedElement.className = 'metric-value ' + (totalRealizedPL >= 0 ? 'profit-positive' : 'profit-negative');
             }
 
             if (unrealizedElement) {
-                unrealizedElement.textContent = '$' + portfolioState.unrealizedPL.toFixed(2);
-                unrealizedElement.className = 'metric-value ' + (portfolioState.unrealizedPL >= 0 ? 'profit-positive' : 'profit-negative');
+                unrealizedElement.textContent = '$' + totalUnrealizedPL.toFixed(2);
+                unrealizedElement.className = 'metric-value ' + (totalUnrealizedPL >= 0 ? 'profit-positive' : 'profit-negative');
             }
 
-            const totalPL = portfolioState.realizedPL + portfolioState.unrealizedPL;
+            const totalPL = totalRealizedPL + totalUnrealizedPL;
             if (totalElement) {
                 totalElement.textContent = '$' + totalPL.toFixed(2);
                 totalElement.className = 'metric-value ' + (totalPL >= 0 ? 'profit-positive' : 'profit-negative');
@@ -1308,24 +1351,31 @@
             // Update other metrics
             const realizedCountElement = document.getElementById('realized-count');
             if (realizedCountElement) {
-                realizedCountElement.textContent = portfolioState.closedTrades.length + ' completed trades';
+                const closedCount = portfolioState.closedTrades ? portfolioState.closedTrades.length : 0;
+                realizedCountElement.textContent = closedCount + ' completed trades';
             }
 
             const unrealizedBreakdownElement = document.getElementById('unrealized-breakdown');
             if (unrealizedBreakdownElement) {
-                const stockPL = portfolioState.openPositions['dfh-stock'] ? 
-                    ((portfolioState.openPositions['dfh-stock'].currentPrice - portfolioState.openPositions['dfh-stock'].costBasis) * portfolioState.openPositions['dfh-stock'].shares) : 0;
-                const optionsPL = portfolioState.openPositions['dfh-call'] ? portfolioState.openPositions['dfh-call'].totalPremium : 0;
-                unrealizedBreakdownElement.textContent = `Stock: $${stockPL.toFixed(0)} | Options: +$${optionsPL.toFixed(0)}`;
+                unrealizedBreakdownElement.textContent = `Stock: $${stockPLTotal.toFixed(0)} | Options: ${optionsPLTotal >= 0 ? '+' : ''}$${optionsPLTotal.toFixed(0)}`;
             }
 
-            // Update win rate
+            // Update total return percentage
+            const totalReturnElement = document.getElementById('total-return');
+            if (totalReturnElement && totalCapitalDeployed > 0) {
+                const returnPercent = (totalPL / totalCapitalDeployed * 100).toFixed(1);
+                totalReturnElement.textContent = returnPercent + '% return';
+            } else if (totalReturnElement) {
+                totalReturnElement.textContent = '0.0% return';
+            }
+
+            // Update win rate based on closed trades
             const winRateElement = document.getElementById('win-rate');
             const avgTradeElement = document.getElementById('avg-trade');
-            if (portfolioState.closedTrades.length > 0) {
-                const winningTrades = portfolioState.closedTrades.filter(trade => trade.realizedPL > 0).length;
-                const winRate = ((winningTrades / portfolioState.closedTrades.length) * 100).toFixed(1);
-                const avgTrade = portfolioState.closedTrades.reduce((sum, trade) => sum + trade.realizedPL, 0) / portfolioState.closedTrades.length;
+            if (portfolioState.closedTrades && portfolioState.closedTrades.length > 0) {
+                const winningTrades = portfolioState.closedTrades.filter(trade => (trade.realizedPL || 0) > 0).length;
+                const winRate = (winningTrades / portfolioState.closedTrades.length * 100).toFixed(1);
+                const avgTrade = totalRealizedPL / portfolioState.closedTrades.length;
 
                 if (winRateElement) winRateElement.textContent = winRate + '%';
                 if (avgTradeElement) avgTradeElement.textContent = 'Avg Trade: $' + avgTrade.toFixed(2);
