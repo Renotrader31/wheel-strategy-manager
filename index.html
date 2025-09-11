@@ -2119,6 +2119,14 @@
                     for (const [symbol, trade] of Object.entries(portfolioState.activeTrades || {})) {
                         if (symbol !== 'DFH') { // DFH is already rendered in HTML
                             renderTrade(symbol, trade);
+                        } else {
+                            // Update DFH display with saved data
+                            const dfhTrade = portfolioState.activeTrades['DFH'];
+                            if (dfhTrade && dfhTrade.positions) {
+                                for (const [positionId, position] of Object.entries(dfhTrade.positions)) {
+                                    updatePositionDisplay(positionId, position);
+                                }
+                            }
                         }
                     }
                     
