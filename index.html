@@ -553,7 +553,7 @@
             <div class="logo-icon">🎯</div>
             <div class="logo-text">
                 <h1>Wheel Strategy Manager</h1>
-                <p>Advanced P&L Tracking + Current Price Editing v2.3</p>
+                <p>Advanced P&L Tracking + Click-to-Edit v2.4</p>
             </div>
         </div>
         <div class="header-actions">
@@ -660,13 +660,11 @@
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Current Price</div>
-                                <div class="detail-value" contenteditable="true" id="dfh-current-price" 
-                                     style="background: #e3f2fd; padding: 4px 8px; border-radius: 4px; cursor: text; border: 2px dashed #2196f3;"
-                                     onblur="console.log('🔧 EVENT: onblur fired for dfh-stock'); saveCurrentPrice('dfh-stock')" 
-                                     onkeydown="console.log('🔧 EVENT: onkeydown fired, key:', event.key); if(event.key==='Enter'){this.blur()}"
-                                     onfocus="console.log('🔧 EVENT: onfocus fired for dfh-stock')"
-                                     title="✏️ EDITABLE: Click to edit price - SAVES AUTOMATICALLY">
-                                     $30.99 ✏️
+                                <div class="detail-value" id="dfh-current-price" 
+                                     style="cursor: pointer; text-decoration: underline;"
+                                     onclick="editPosition('dfh-stock')"
+                                     title="Click to edit price">
+                                     $30.99
                                 </div>
                             </div>
                             <div class="detail-item">
@@ -1820,91 +1818,7 @@
             alert('Roll functionality for ' + positionId + ' - Roll modal would open here');
         }
 
-        function saveCurrentPrice(positionId) {
-            console.log('🔧 DEBUG: saveCurrentPrice called with positionId:', positionId);
-            const currentPriceElement = document.getElementById(positionId + '-current-price');
-            console.log('🔧 DEBUG: Found element:', currentPriceElement);
-            if (!currentPriceElement) {
-                console.log('🔧 DEBUG: Element not found, returning');
-                return;
-            }
 
-            // Get the text content and parse the price
-            let priceText = currentPriceElement.textContent.trim();
-            console.log('🔧 DEBUG: Original text:', priceText);
-            
-            // Remove $ sign and emoji if present
-            priceText = priceText.replace('$', '').replace('✏️', '').trim();
-            console.log('🔧 DEBUG: Cleaned text:', priceText);
-            
-            // Parse the price
-            const newPrice = parseFloat(priceText);
-            console.log('🔧 DEBUG: Parsed price:', newPrice);
-            
-            if (isNaN(newPrice) || newPrice < 0) {
-                // Invalid price - revert to original value
-                const position = portfolioState.openPositions[positionId];
-                if (position && position.currentPrice !== undefined) {
-                    currentPriceElement.textContent = '$' + position.currentPrice.toFixed(2) + ' ✏️';
-                }
-                showNotification('Invalid price entered. Please enter a valid number.', 'error');
-                return;
-            }
-
-            // Update the position in portfolioState
-            console.log('🔧 DEBUG: Checking portfolioState:', portfolioState);
-            const position = portfolioState.openPositions[positionId];
-            console.log('🔧 DEBUG: Found position:', position);
-            if (position && position.type === 'stock') {
-                const oldPrice = position.currentPrice;
-                position.currentPrice = newPrice;
-
-                // Format the display with $ sign and edit icon
-                currentPriceElement.textContent = '$' + newPrice.toFixed(2) + ' ✏️';
-
-                // Update related calculations (total value, unrealized P&L)
-                const totalValueElement = document.getElementById(positionId + '-total-value');
-                const plElement = document.getElementById(positionId + '-pl');
-
-                if (totalValueElement && position.shares) {
-                    const totalValue = position.shares * newPrice;
-                    totalValueElement.textContent = '$' + totalValue.toFixed(2);
-                }
-
-                if (plElement && position.shares && position.costBasis !== undefined) {
-                    const unrealizedPL = (newPrice - position.costBasis) * position.shares;
-                    plElement.textContent = (unrealizedPL >= 0 ? '+$' : '$') + unrealizedPL.toFixed(2);
-                    plElement.className = 'detail-value ' + (unrealizedPL >= 0 ? 'profit-positive' : 'profit-negative');
-                }
-
-                // Update the activeTrades as well if this position belongs to a trade
-                for (const [symbol, trade] of Object.entries(portfolioState.activeTrades || {})) {
-                    if (trade.positions && trade.positions[positionId]) {
-                        trade.positions[positionId].currentPrice = newPrice;
-                        break;
-                    }
-                }
-
-                // Save to localStorage
-                console.log('🔧 DEBUG: Calling savePortfolioState()');
-                savePortfolioState();
-                console.log('🔧 DEBUG: Portfolio state saved');
-
-                // Update overall P&L metrics
-                console.log('🔧 DEBUG: Calling updatePLMetrics()');
-                updatePLMetrics();
-
-                // Show success notification
-                if (oldPrice !== newPrice) {
-                    console.log('🔧 DEBUG: Price changed, showing notification');
-                    showNotification(`Current price updated to $${newPrice.toFixed(2)}`, 'success');
-                } else {
-                    console.log('🔧 DEBUG: Price unchanged');
-                }
-            } else {
-                console.log('🔧 DEBUG: Position not found or not a stock position');
-            }
-        }
 
         function submitNewTrade() {
             const symbol = document.getElementById('newTradeSymbol').value.trim().toUpperCase();
@@ -2059,13 +1973,11 @@
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">Current Price</div>
-                            <div class="detail-value" contenteditable="true" id="${positionId}-current-price" 
-                                 style="background: #e3f2fd; padding: 4px 8px; border-radius: 4px; cursor: text; border: 2px dashed #2196f3;"
-                                 onblur="console.log('🔧 EVENT: onblur fired for ${positionId}'); saveCurrentPrice('${positionId}')" 
-                                 onkeydown="console.log('🔧 EVENT: onkeydown fired, key:', event.key); if(event.key==='Enter'){this.blur()}"
-                                 onfocus="console.log('🔧 EVENT: onfocus fired for ${positionId}')"
-                                 title="✏️ EDITABLE: Click to edit price - SAVES AUTOMATICALLY">
-                                 $${position.currentPrice.toFixed(2)} ✏️
+                            <div class="detail-value" id="${positionId}-current-price" 
+                                 style="cursor: pointer; text-decoration: underline;"
+                                 onclick="editPosition('${positionId}')"
+                                 title="Click to edit price">
+                                 $${position.currentPrice.toFixed(2)}
                             </div>
                         </div>
                         <div class="detail-item">
@@ -2197,15 +2109,11 @@
 
         function loadPortfolioState() {
             try {
-                console.log('🔧 DEBUG: Loading portfolio state from localStorage');
                 const saved = localStorage.getItem('wheelStrategyPortfolio');
-                console.log('🔧 DEBUG: Saved data from localStorage:', saved);
                 if (saved) {
                     const loadedState = JSON.parse(saved);
-                    console.log('🔧 DEBUG: Parsed loaded state:', loadedState);
                     // Merge with default state to ensure all properties exist
                     portfolioState = { ...portfolioState, ...loadedState };
-                    console.log('🔧 DEBUG: Merged portfolio state:', portfolioState);
                     
                     // Render all active trades
                     for (const [symbol, trade] of Object.entries(portfolioState.activeTrades || {})) {
@@ -2260,9 +2168,7 @@
 
         // Initialize on page load
         window.addEventListener('load', function() {
-            console.log('🔧 DEBUG: Page loaded, calling loadPortfolioState');
             loadPortfolioState();
-            console.log('🔧 DEBUG: Final portfolioState after load:', portfolioState);
         });
 
         function submitPosition() {
