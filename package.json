@@ -2,16 +2,16 @@
   "name": "wheel-strategy-manager-pro",
   "version": "1.0.0",
   "description": "Advanced Wheel Strategy Manager for options trading with comprehensive P&L tracking, data persistence, and professional UI",
-  "main": "public/index.html",
+  "main": "index.html",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npx http-server public -p 3000 -o",
+    "dev": "npx http-server . -p 3000 -o",
     "start": "npm run dev",
     "build": "echo 'Static site - no build step needed'",
     "deploy": "vercel --prod",
-    "deploy:netlify": "netlify deploy --prod --dir=public",
-    "deploy:gh-pages": "gh-pages -d public",
+    "deploy:netlify": "netlify deploy --prod --dir=.",
+    "deploy:gh-pages": "gh-pages -d .",
     "preview": "vercel",
     "backup": "node scripts/backup.js",
     "restore": "node scripts/restore.js",
@@ -19,7 +19,7 @@
     "optimize": "node scripts/optimize.js",
     "test": "echo 'No tests specified yet'",
     "lint": "echo 'No linting configured yet'",
-    "format": "prettier --write public/**/*.{html,css,js,json}",
+    "format": "prettier --write *.{html,css,js,json}",
     "analyze": "npx bundlesize"
   },
   "keywords": [
@@ -39,12 +39,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/wheel-strategy-manager-pro.git"
+    "url": "git+https://github.com/Renotrader31/wheel-strategy-manager.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/wheel-strategy-manager-pro/issues"
+    "url": "https://github.com/Renotrader31/wheel-strategy-manager/issues"
   },
-  "homepage": "https://github.com/yourusername/wheel-strategy-manager-pro#readme",
+  "homepage": "https://github.com/Renotrader31/wheel-strategy-manager#readme",
   "engines": {
     "node": ">=14.0.0",
     "npm": ">=6.0.0"
@@ -61,7 +61,7 @@
   },
   "bundlesize": [
     {
-      "path": "public/index.html",
+      "path": "index.html",
       "maxSize": "60 kB",
       "compression": "gzip"
     }
