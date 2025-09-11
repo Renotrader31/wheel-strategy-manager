@@ -661,7 +661,8 @@
                             <div class="detail-item">
                                 <div class="detail-label">Current Price</div>
                                 <div class="detail-value" contenteditable="true" id="dfh-current-price" 
-                                     style="background: #f8fafc; padding: 4px 8px; border-radius: 4px; cursor: text;">
+                                     style="background: #f8fafc; padding: 4px 8px; border-radius: 4px; cursor: text;"
+                                     onblur="saveCurrentPrice('dfh-stock')" onkeydown="if(event.key==='Enter'){this.blur()}">
                                      $30.99
                                 </div>
                             </div>
@@ -1816,6 +1817,74 @@
             alert('Roll functionality for ' + positionId + ' - Roll modal would open here');
         }
 
+        function saveCurrentPrice(positionId) {
+            const currentPriceElement = document.getElementById(positionId + '-current-price');
+            if (!currentPriceElement) return;
+
+            // Get the text content and parse the price
+            let priceText = currentPriceElement.textContent.trim();
+            
+            // Remove $ sign if present
+            priceText = priceText.replace('$', '');
+            
+            // Parse the price
+            const newPrice = parseFloat(priceText);
+            
+            if (isNaN(newPrice) || newPrice < 0) {
+                // Invalid price - revert to original value
+                const position = portfolioState.openPositions[positionId];
+                if (position && position.currentPrice !== undefined) {
+                    currentPriceElement.textContent = '$' + position.currentPrice.toFixed(2);
+                }
+                showNotification('Invalid price entered. Please enter a valid number.', 'error');
+                return;
+            }
+
+            // Update the position in portfolioState
+            const position = portfolioState.openPositions[positionId];
+            if (position && position.type === 'stock') {
+                const oldPrice = position.currentPrice;
+                position.currentPrice = newPrice;
+
+                // Format the display with $ sign
+                currentPriceElement.textContent = '$' + newPrice.toFixed(2);
+
+                // Update related calculations (total value, unrealized P&L)
+                const totalValueElement = document.getElementById(positionId + '-total-value');
+                const plElement = document.getElementById(positionId + '-pl');
+
+                if (totalValueElement && position.shares) {
+                    const totalValue = position.shares * newPrice;
+                    totalValueElement.textContent = '$' + totalValue.toFixed(2);
+                }
+
+                if (plElement && position.shares && position.costBasis !== undefined) {
+                    const unrealizedPL = (newPrice - position.costBasis) * position.shares;
+                    plElement.textContent = (unrealizedPL >= 0 ? '+$' : '$') + unrealizedPL.toFixed(2);
+                    plElement.className = 'detail-value ' + (unrealizedPL >= 0 ? 'profit-positive' : 'profit-negative');
+                }
+
+                // Update the activeTrades as well if this position belongs to a trade
+                for (const [symbol, trade] of Object.entries(portfolioState.activeTrades || {})) {
+                    if (trade.positions && trade.positions[positionId]) {
+                        trade.positions[positionId].currentPrice = newPrice;
+                        break;
+                    }
+                }
+
+                // Save to localStorage
+                savePortfolioState();
+
+                // Update overall P&L metrics
+                updatePLMetrics();
+
+                // Show success notification
+                if (oldPrice !== newPrice) {
+                    showNotification(`Current price updated to $${newPrice.toFixed(2)}`, 'success');
+                }
+            }
+        }
+
         function submitNewTrade() {
             const symbol = document.getElementById('newTradeSymbol').value.trim().toUpperCase();
             const strategy = document.getElementById('newTradeStrategy').value;
@@ -1970,7 +2039,8 @@
                         <div class="detail-item">
                             <div class="detail-label">Current Price</div>
                             <div class="detail-value" contenteditable="true" id="${positionId}-current-price" 
-                                 style="background: #f8fafc; padding: 4px 8px; border-radius: 4px; cursor: text;">
+                                 style="background: #f8fafc; padding: 4px 8px; border-radius: 4px; cursor: text;"
+                                 onblur="saveCurrentPrice('${positionId}')" onkeydown="if(event.key==='Enter'){this.blur()}">
                                  $${position.currentPrice.toFixed(2)}
                             </div>
                         </div>
