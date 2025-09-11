@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wheel Strategy Manager - P&L Tracking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #1a1f3a;
+            color: #ffffff;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .logo-text h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .logo-text p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4299ff 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+        }
+
+        .nav-tabs {
+            background: #252b4d;
+            display: flex;
+            padding: 0 40px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #94a3b8;
+        }
+
+        .nav-tab:hover {
+            color: #e2e8f0;
+        }
+
+        .nav-tab.active {
+            border-bottom-color: #4299ff;
+            background: rgba(66, 153, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .main-content {
+            padding: 30px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            color: #334155;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .metric-card.realized::before {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        }
+
+        .metric-card.unrealized::before {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .metric-card.total::before {
+            background: linear-gradient(135deg, #4299ff 0%, #2563eb 100%);
+        }
+
+        .metric-card.stats::before {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .metric-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .metric-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+
+        .metric-icon.realized {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        }
+
+        .metric-icon.unrealized {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .metric-icon.total {
+            background: linear-gradient(135deg, #4299ff 0%, #2563eb 100%);
+        }
+
+        .metric-icon.stats {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .metric-sublabel {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .section-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .trade-card {
+            background: #ffffff;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .trade-header {
+            background: linear-gradient(135deg, #334155 0%, #475569 100%);
+            color: white;
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .trade-symbol {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .trade-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-open {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-closed {
+            background: rgba(100, 116, 139, 0.2);
+            color: #64748b;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        .status-assigned {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-expired {
+            background: rgba(139, 92, 246, 0.2);
+            color: #8b5cf6;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .position-grid {
+            padding: 30px;
+            display: grid;
+            gap: 25px;
+        }
+
+        .position-section {
+            border-left: 4px solid #e2e8f0;
+            padding-left: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .position-section.stock {
+            border-left-color: #3b82f6;
+        }
+
+        .position-section.call {
+            border-left-color: #22c55e;
+        }
+
+        .position-section.put {
+            border-left-color: #ef4444;
+        }
+
+        .position-section.closed {
+            opacity: 0.7;
+            border-left-color: #94a3b8;
+        }
+
+        .position-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .position-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .detail-item {
+            text-align: left;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .profit-positive { color: #22c55e; }
+        .profit-negative { color: #ef4444; }
+        .profit-neutral { color: #64748b; }
+
+        .position-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+
+        .btn-edit { background: #3b82f6; color: white; }
+        .btn-delete { background: #ef4444; color: white; }
+        .btn-close { background: #f59e0b; color: white; }
+        .btn-roll { background: #8b5cf6; color: white; }
+        .btn-expire { background: #6b7280; color: white; }
+
+        .add-position-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .add-position-btn:hover {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            color: #334155;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            color: #334155;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            color: #94a3b8;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: #334155;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #334155;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #ffffff;
+            color: #334155;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4299ff;
+            box-shadow: 0 0 0 3px rgba(66, 153, 255, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .history-section {
+            margin-top: 40px;
+        }
+
+        .history-item {
+            background: rgba(100, 116, 139, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #64748b;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .history-symbol {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .history-date {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .history-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .nav-tabs,
+            .main-content {
+                padding: 0 20px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">🎯</div>
+            <div class="logo-text">
+                <h1>Wheel Strategy Manager</h1>
+                <p>Advanced P&L Tracking</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openModal('newTradeModal')">
+                ⚡ Add New Trade
+            </button>
+            <button class="btn btn-success" onclick="openModal('newPositionModal')">
+                📈 Add Position
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-tabs">
+        <div class="nav-tab active" onclick="switchTab('dashboard')">
+            📊 Dashboard
+        </div>
+        <div class="nav-tab" onclick="switchTab('analytics')">
+            📈 Analytics
+        </div>
+        <div class="nav-tab" onclick="switchTab('history')">
+            📜 History
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div id="dashboard-tab" class="tab-content active">
+            <!-- Enhanced P&L Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card realized">
+                    <div class="metric-header">
+                        <div class="metric-icon realized">💰</div>
+                        <span>Realized P&L</span>
+                    </div>
+                    <div class="metric-value" id="realized-pl">$0.00</div>
+                    <div class="metric-label">From closed positions</div>
+                    <div class="metric-sublabel" id="realized-count">0 completed trades</div>
+                </div>
+
+                <div class="metric-card unrealized">
+                    <div class="metric-header">
+                        <div class="metric-icon unrealized">📊</div>
+                        <span>Unrealized P&L</span>
+                    </div>
+                    <div class="metric-value" id="unrealized-pl">$402.00</div>
+                    <div class="metric-label">From open positions</div>
+                    <div class="metric-sublabel" id="unrealized-breakdown">Stock: -$3 | Options: +$405</div>
+                </div>
+
+                <div class="metric-card total">
+                    <div class="metric-header">
+                        <div class="metric-icon total">🎯</div>
+                        <span>Total P&L</span>
+                    </div>
+                    <div class="metric-value" id="total-pl">$402.00</div>
+                    <div class="metric-label">Combined performance</div>
+                    <div class="metric-sublabel" id="total-return">4.3% return</div>
+                </div>
+
+                <div class="metric-card stats">
+                    <div class="metric-header">
+                        <div class="metric-icon stats">📈</div>
+                        <span>Win Rate</span>
+                    </div>
+                    <div class="metric-value" id="win-rate">--</div>
+                    <div class="metric-label">From closed trades</div>
+                    <div class="metric-sublabel" id="avg-trade">Avg Trade: $0.00</div>
+                </div>
+            </div>
+
+            <!-- Active Trades Section -->
+            <h2 class="section-title">
+                📊 Active Trades
+            </h2>
+
+            <!-- DFH Trade Block -->
+            <div class="trade-card" id="dfh-trade" data-symbol="DFH">
+                <div class="trade-header">
+                    <div>
+                        <div class="trade-symbol">DFH</div>
+                        <div class="trade-subtitle">Wheel Strategy Position</div>
+                    </div>
+                    <div class="status-badge status-open">Active</div>
+                </div>
+
+                <div class="position-grid">
+                    <!-- Stock Position -->
+                    <div class="position-section stock" id="dfh-stock-section" data-status="open">
+                        <div class="position-title">
+                            📈 Stock Position
+                            <button class="btn btn-sm btn-edit" onclick="editPosition('dfh-stock')">
+                                ✏️ Edit
+                            </button>
+                        </div>
+                        <div class="position-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Shares</div>
+                                <div class="detail-value" id="dfh-shares">300</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Cost Basis</div>
+                                <div class="detail-value" id="dfh-cost-basis">$31.00</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Current Price</div>
+                                <div class="detail-value" contenteditable="true" id="dfh-current-price" 
+                                     style="background: #f8fafc; padding: 4px 8px; border-radius: 4px; cursor: text;">
+                                     $30.99
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Total Value</div>
+                                <div class="detail-value" id="dfh-total-value">$9,297.00</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Unrealized P&L</div>
+                                <div class="detail-value" id="dfh-stock-pl">-$3.00</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Position Status</div>
+                                <div class="detail-value">
+                                    <span class="status-badge status-open" id="dfh-stock-status">Open</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="position-actions">
+                            <button class="btn btn-sm btn-edit" onclick="editPosition('dfh-stock')">✏️ Edit</button>
+                            <button class="btn btn-sm btn-close" onclick="openCloseModal('dfh-stock', 'stock')">🔒 Close Position</button>
+                            <button class="btn btn-sm btn-success" onclick="openModal('newCoveredCallModal', 'DFH')">📞 Add Covered Call</button>
+                        </div>
+                    </div>
+
+                    <!-- Covered Calls Section -->
+                    <div class="position-section call" id="dfh-call-section" data-status="open">
+                        <div class="position-title">
+                            📞 Covered Calls
+                            <button class="btn btn-sm btn-success" onclick="openModal('newCoveredCallModal', 'DFH')">
+                                ➕ Add Call
+                            </button>
+                        </div>
+                        <div class="position-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Strike Price</div>
+                                <div class="detail-value" id="dfh-call-strike">$32.50</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Expiration</div>
+                                <div class="detail-value" id="dfh-call-expiration">2025-10-17</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Contracts</div>
+                                <div class="detail-value" id="dfh-call-contracts">3x</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Premium Collected</div>
+                                <div class="detail-value" id="dfh-call-premium">$1.35</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Days to Expiration</div>
+                                <div class="detail-value" id="dfh-call-dte">38 days</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Total Premium</div>
+                                <div class="detail-value profit-positive" id="dfh-call-total">$405.00</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Current Value</div>
+                                <div class="detail-value" id="dfh-call-current">$0.85</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Unrealized P&L</div>
+                                <div class="detail-value profit-positive" id="dfh-call-pl">+$405.00</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Position Status</div>
+                                <div class="detail-value">
+                                    <span class="status-badge status-open" id="dfh-call-status">Open</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="position-actions">
+                            <button class="btn btn-sm btn-edit" onclick="editPosition('dfh-call')">✏️ Edit</button>
+                            <button class="btn btn-sm btn-delete" onclick="deletePosition('dfh-call')">🗑 Delete</button>
+                            <button class="btn btn-sm btn-close" onclick="openCloseModal('dfh-call', 'call')">🔒 Close Position</button>
+                            <button class="btn btn-sm btn-expire" onclick="expirePosition('dfh-call')">⏰ Mark Expired</button>
+                            <button class="btn btn-sm btn-roll" onclick="rollPosition('dfh-call')">🔄 Roll</button>
+                        </div>
+                    </div>
+
+                    <!-- Add Position Section -->
+                    <div class="add-position-btn" onclick="openModal('addPositionModal', 'DFH')">
+                        ➕ Add Cash-Secured Put or Additional Position
+                    </div>
+                </div>
+            </div>
+
+            <!-- Closed Positions Section -->
+            <div id="closed-positions-section" style="display: none;">
+                <h2 class="section-title">
+                    📋 Closed Positions
+                </h2>
+                <div id="closed-positions-container">
+                    <!-- Closed positions will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Add New Trade Button -->
+            <div class="add-position-btn" onclick="openModal('newTradeModal')" style="margin-top: 20px;">
+                🎯 Start New Wheel Strategy Trade
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics-tab" class="tab-content" style="display: none;">
+            <h2 class="section-title">📈 Performance Analytics</h2>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-icon total">📊</div>
+                        <span>Monthly Performance</span>
+                    </div>
+                    <div class="metric-value" id="monthly-performance">--</div>
+                    <div class="metric-label">Current month return</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-icon realized">🎯</div>
+                        <span>Assignment Rate</span>
+                    </div>
+                    <div class="metric-value" id="assignment-rate">--</div>
+                    <div class="metric-label">CSPs assigned</div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
+                    <h3 style="color: #64748b; margin-bottom: 10px;">Advanced Analytics</h3>
+                    <p style="color: #94a3b8;">Complete more trades to unlock detailed performance analytics, risk metrics, and strategy insights.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history-tab" class="tab-content" style="display: none;">
+            <h2 class="section-title">📜 Trade History</h2>
+
+            <div id="history-container">
+                <div class="metric-card">
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">📚</div>
+                        <h3 style="color: #64748b; margin-bottom: 10px;">Trade History Ready</h3>
+                        <p style="color: #94a3b8;">Your completed trades and realized P&L will appear here as you close positions. Each closed trade will show entry price, exit price, and realized profit/loss.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Modal Forms -->
+
+    <!-- Close Position Modal -->
+    <div id="closePositionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">🔒 Close Position</h2>
+                <span class="close" onclick="closeModal('closePositionModal')">&times;</span>
+            </div>
+
+            <div id="closePositionContent">
+                <form id="closePositionForm">
+                    <input type="hidden" id="closePositionId" />
+                    <input type="hidden" id="closePositionType" />
+
+                    <div class="form-group">
+                        <label class="form-label">Position Details</label>
+                        <div id="closePositionSummary" style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <!-- Position summary will be populated here -->
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Close Method</label>
+                        <select class="form-control" id="closeMethod" onchange="updateCloseForm()" required>
+                            <option value="">Select close method</option>
+                            <option value="market">Market Sale</option>
+                            <option value="assignment">Assignment</option>
+                            <option value="expiration">Expiration</option>
+                            <option value="buyback">Buy Back (Options)</option>
+                        </select>
+                    </div>
+
+                    <div id="marketCloseFields" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Sale Price</label>
+                                <input type="number" step="0.01" class="form-control" id="salePrice" placeholder="31.50" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Sale Date</label>
+                                <input type="date" class="form-control" id="saleDate" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fees/Commissions</label>
+                            <input type="number" step="0.01" class="form-control" id="closeFees" placeholder="0.00" />
+                        </div>
+                    </div>
+
+                    <div id="assignmentFields" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">Assignment Price</label>
+                            <input type="number" step="0.01" class="form-control" id="assignmentPrice" readonly />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Assignment Date</label>
+                            <input type="date" class="form-control" id="assignmentDate" />
+                        </div>
+                    </div>
+
+                    <div id="expirationFields" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">Expiration Date</label>
+                            <input type="date" class="form-control" id="expirationDate" readonly />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Final Value</label>
+                            <select class="form-control" id="finalValue">
+                                <option value="worthless">Expired Worthless</option>
+                                <option value="itm">Expired In-The-Money</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="buybackFields" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Buyback Price</label>
+                                <input type="number" step="0.01" class="form-control" id="buybackPrice" placeholder="0.50" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Buyback Date</label>
+                                <input type="date" class="form-control" id="buybackDate" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="realizedPLPreview" style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0; display: none;">
+                        <h4 style="color: #1e293b; margin-bottom: 10px;">Realized P&L Calculation</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14px;">
+                            <div>Entry Value: <span id="entryValue">$0.00</span></div>
+                            <div>Exit Value: <span id="exitValue">$0.00</span></div>
+                            <div>Fees: <span id="totalFees">$0.00</span></div>
+                            <div style="font-weight: 600; font-size: 16px; color: #22c55e;" id="realizedPL">Realized P&L: $0.00</div>
+                        </div>
+                    </div>
+
+                    <div class="position-actions" style="margin-top: 25px;">
+                        <button type="button" class="btn btn-close" onclick="submitClosePosition()" id="closePositionBtn">Close Position</button>
+                        <button type="button" class="btn" style="background: #6b7280;" onclick="closeModal('closePositionModal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Trade Modal -->
+    <div id="newTradeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">🎯 Start New Wheel Strategy Trade</h2>
+                <span class="close" onclick="closeModal('newTradeModal')">&times;</span>
+            </div>
+            <form id="newTradeForm">
+                <div class="form-group">
+                    <label class="form-label">Stock Symbol</label>
+                    <input type="text" class="form-control" id="newTradeSymbol" placeholder="e.g., AAPL" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Starting Strategy</label>
+                        <select class="form-control" id="newTradeStrategy" required>
+                            <option value="">Select Strategy</option>
+                            <option value="csp">Cash-Secured Put</option>
+                            <option value="stock">Direct Stock Purchase</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Capital Allocation</label>
+                        <input type="number" class="form-control" id="newTradeCapital" placeholder="10000" required>
+                    </div>
+                </div>
+                <div class="position-actions" style="margin-top: 20px;">
+                    <button type="button" class="btn btn-primary" onclick="submitNewTrade()">Create Trade</button>
+                    <button type="button" class="btn" style="background: #6b7280;" onclick="closeModal('newTradeModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Position Modal -->
+    <div id="addPositionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">➕ Add Position to <span id="modalSymbol">DFH</span></h2>
+                <span class="close" onclick="closeModal('addPositionModal')">&times;</span>
+            </div>
+            <form id="addPositionForm">
+                <div class="form-group">
+                    <label class="form-label">Position Type</label>
+                    <select class="form-control" id="positionType" onchange="updatePositionForm()" required>
+                        <option value="">Select Position Type</option>
+                        <option value="csp">Cash-Secured Put</option>
+                        <option value="stock">Stock Purchase</option>
+                        <option value="coveredcall">Covered Call</option>
+                    </select>
+                </div>
+
+                <!-- CSP Fields -->
+                <div id="cspFields" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Strike Price</label>
+                            <input type="number" step="0.01" class="form-control" id="cspStrike" placeholder="30.00">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Expiration Date</label>
+                            <input type="date" class="form-control" id="cspExpiration">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Contracts</label>
+                            <input type="number" class="form-control" id="cspContracts" placeholder="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Premium Received</label>
+                            <input type="number" step="0.01" class="form-control" id="cspPremium" placeholder="1.50">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock Fields -->
+                <div id="stockFields" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Shares</label>
+                            <input type="number" class="form-control" id="stockShares" placeholder="100">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Purchase Price</label>
+                            <input type="number" step="0.01" class="form-control" id="stockPrice" placeholder="30.99">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Covered Call Fields -->
+                <div id="callFields" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Strike Price</label>
+                            <input type="number" step="0.01" class="form-control" id="callStrike" placeholder="32.50">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Expiration Date</label>
+                            <input type="date" class="form-control" id="callExpiration">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Contracts</label>
+                            <input type="number" class="form-control" id="callContracts" placeholder="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Premium Received</label>
+                            <input type="number" step="0.01" class="form-control" id="callPremium" placeholder="1.35">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="position-actions" style="margin-top: 20px;">
+                    <button type="button" class="btn btn-success" onclick="submitPosition()">Add Position</button>
+                    <button type="button" class="btn" style="background: #6b7280;" onclick="closeModal('addPositionModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Position Modal -->
+    <div id="editPositionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">✏️ Edit Position: <span id="editPositionSymbol">WULF</span></h2>
+                <span class="close" onclick="closeModal('editPositionModal')">&times;</span>
+            </div>
+            <form id="editPositionForm">
+                <input type="hidden" id="editPositionId" />
+                <input type="hidden" id="editPositionType" />
+
+                <!-- Common fields for all position types -->
+                <div class="form-group">
+                    <label class="form-label">Position Type</label>
+                    <input type="text" class="form-control" id="editPositionTypeDisplay" readonly style="background: #f1f5f9;">
+                </div>
+
+                <!-- Stock Position Fields -->
+                <div id="editStockFields" class="form-section" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Number of Shares</label>
+                            <input type="number" class="form-control" id="editShares" placeholder="100" min="0" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cost Basis per Share</label>
+                            <input type="number" class="form-control" id="editCostBasis" placeholder="50.00" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Current Price per Share</label>
+                        <input type="number" class="form-control" id="editCurrentPrice" placeholder="52.50" min="0" step="0.01">
+                    </div>
+                </div>
+
+                <!-- CSP Position Fields -->
+                <div id="editCSPFields" class="form-section" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Strike Price</label>
+                            <input type="number" class="form-control" id="editCSPStrike" placeholder="45.00" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Expiration Date</label>
+                            <input type="date" class="form-control" id="editCSPExpiration">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Number of Contracts</label>
+                            <input type="number" class="form-control" id="editCSPContracts" placeholder="2" min="1" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Premium Received per Contract</label>
+                            <input type="number" class="form-control" id="editCSPPremium" placeholder="1.50" min="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Call Position Fields -->
+                <div id="editCallFields" class="form-section" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Strike Price</label>
+                            <input type="number" class="form-control" id="editCallStrike" placeholder="55.00" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Expiration Date</label>
+                            <input type="date" class="form-control" id="editCallExpiration">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Number of Contracts</label>
+                            <input type="number" class="form-control" id="editCallContracts" placeholder="2" min="1" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Premium Received per Contract</label>
+                            <input type="number" class="form-control" id="editCallPremium" placeholder="2.00" min="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="position-actions" style="margin-top: 25px;">
+                    <button type="button" class="btn btn-primary" onclick="submitEditPosition()">💾 Save Changes</button>
+                    <button type="button" class="btn" style="background: #6b7280;" onclick="closeModal('editPositionModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        // Global state management
+        let portfolioState = {
+            realizedPL: 0,
+            unrealizedPL: 402,
+            totalPL: 402,
+            closedTrades: [],
+            activeTrades: {
+                'DFH': {
+                    symbol: 'DFH',
+                    capital: 10000,
+                    strategy: 'stock',
+                    createdAt: new Date().toISOString(),
+                    positions: {
+                        'dfh-stock': {
+                            type: 'stock',
+                            symbol: 'DFH',
+                            shares: 300,
+                            costBasis: 31.00,
+                            currentPrice: 30.99,
+                            status: 'open'
+                        },
+                        'dfh-call': {
+                            type: 'call',
+                            symbol: 'DFH',
+                            strike: 32.50,
+                            expiration: '2025-10-17',
+                            contracts: 3,
+                            premiumReceived: 1.35,
+                            totalPremium: 405.00,
+                            status: 'open'
+                        }
+                    }
+                }
+            },
+            openPositions: {
+                'dfh-stock': {
+                    type: 'stock',
+                    symbol: 'DFH',
+                    shares: 300,
+                    costBasis: 31.00,
+                    currentPrice: 30.99,
+                    status: 'open'
+                },
+                'dfh-call': {
+                    type: 'call',
+                    symbol: 'DFH',
+                    strike: 32.50,
+                    expiration: '2025-10-17',
+                    contracts: 3,
+                    premiumReceived: 1.35,
+                    totalPremium: 405.00,
+                    status: 'open'
+                }
+            }
+        };
+
+        let currentClosePosition = null;
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.style.display = 'none');
+
+            const navTabs = document.querySelectorAll('.nav-tab');
+            navTabs.forEach(tab => tab.classList.remove('active'));
+
+            document.getElementById(tabName + '-tab').style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        // Modal functionality
+        function openModal(modalId, symbol = '') {
+            if (symbol) {
+                const modalSymbol = document.getElementById('modalSymbol');
+                if (modalSymbol) modalSymbol.textContent = symbol;
+            }
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Position form handling
+        function updatePositionForm() {
+            const positionType = document.getElementById('positionType').value;
+
+            document.getElementById('cspFields').style.display = 'none';
+            document.getElementById('stockFields').style.display = 'none';
+            document.getElementById('callFields').style.display = 'none';
+
+            if (positionType === 'csp') {
+                document.getElementById('cspFields').style.display = 'block';
+            } else if (positionType === 'stock') {
+                document.getElementById('stockFields').style.display = 'block';
+            } else if (positionType === 'coveredcall') {
+                document.getElementById('callFields').style.display = 'block';
+            }
+        }
+
+        // Price update functionality for DFH current price
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPriceElement = document.getElementById('dfh-current-price');
+            if (currentPriceElement) {
+                currentPriceElement.addEventListener('blur', updateDFHCalculations);
+                currentPriceElement.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        this.blur();
+                    }
+                });
+            }
+
+            // Initialize calculations
+            updateDFHCalculations();
+            updatePLMetrics();
+        });
+
+        function updateDFHCalculations() {
+            const currentPriceElement = document.getElementById('dfh-current-price');
+            if (!currentPriceElement) return;
+
+            const currentPriceText = currentPriceElement.textContent;
+            const currentPrice = parseFloat(currentPriceText.replace('$', ''));
+            const shares = 300;
+            const costBasis = 31.00;
+
+            if (!isNaN(currentPrice)) {
+                portfolioState.openPositions['dfh-stock'].currentPrice = currentPrice;
+
+                const totalValue = (currentPrice * shares).toFixed(2);
+                const stockPL = ((currentPrice - costBasis) * shares).toFixed(2);
+
+                document.getElementById('dfh-total-value').textContent = '$' + totalValue;
+                document.getElementById('dfh-stock-pl').textContent = (stockPL >= 0 ? '+$' : '$') + stockPL;
+
+                // Update color classes
+                const plElement = document.getElementById('dfh-stock-pl');
+                plElement.className = stockPL >= 0 ? 'detail-value profit-positive' : 'detail-value profit-negative';
+
+                const valueElement = document.getElementById('dfh-total-value');
+                valueElement.className = stockPL >= 0 ? 'detail-value profit-positive' : 'detail-value profit-negative';
+
+                // Update unrealized P&L
+                const callPL = portfolioState.openPositions['dfh-call'].totalPremium;
+                portfolioState.unrealizedPL = parseFloat(stockPL) + callPL;
+                updatePLMetrics();
+            }
+        }
+
+        function updatePLMetrics() {
+            const realizedElement = document.getElementById('realized-pl');
+            const unrealizedElement = document.getElementById('unrealized-pl');
+            const totalElement = document.getElementById('total-pl');
+
+            if (realizedElement) {
+                realizedElement.textContent = '$' + portfolioState.realizedPL.toFixed(2);
+                realizedElement.className = 'metric-value ' + (portfolioState.realizedPL >= 0 ? 'profit-positive' : 'profit-negative');
+            }
+
+            if (unrealizedElement) {
+                unrealizedElement.textContent = '$' + portfolioState.unrealizedPL.toFixed(2);
+                unrealizedElement.className = 'metric-value ' + (portfolioState.unrealizedPL >= 0 ? 'profit-positive' : 'profit-negative');
+            }
+
+            const totalPL = portfolioState.realizedPL + portfolioState.unrealizedPL;
+            if (totalElement) {
+                totalElement.textContent = '$' + totalPL.toFixed(2);
+                totalElement.className = 'metric-value ' + (totalPL >= 0 ? 'profit-positive' : 'profit-negative');
+            }
+
+            // Update other metrics
+            const realizedCountElement = document.getElementById('realized-count');
+            if (realizedCountElement) {
+                realizedCountElement.textContent = portfolioState.closedTrades.length + ' completed trades';
+            }
+
+            const unrealizedBreakdownElement = document.getElementById('unrealized-breakdown');
+            if (unrealizedBreakdownElement) {
+                const stockPL = portfolioState.openPositions['dfh-stock'] ? 
+                    ((portfolioState.openPositions['dfh-stock'].currentPrice - portfolioState.openPositions['dfh-stock'].costBasis) * portfolioState.openPositions['dfh-stock'].shares) : 0;
+                const optionsPL = portfolioState.openPositions['dfh-call'] ? portfolioState.openPositions['dfh-call'].totalPremium : 0;
+                unrealizedBreakdownElement.textContent = `Stock: $${stockPL.toFixed(0)} | Options: +$${optionsPL.toFixed(0)}`;
+            }
+
+            // Update win rate
+            const winRateElement = document.getElementById('win-rate');
+            const avgTradeElement = document.getElementById('avg-trade');
+            if (portfolioState.closedTrades.length > 0) {
+                const winningTrades = portfolioState.closedTrades.filter(trade => trade.realizedPL > 0).length;
+                const winRate = ((winningTrades / portfolioState.closedTrades.length) * 100).toFixed(1);
+                const avgTrade = portfolioState.closedTrades.reduce((sum, trade) => sum + trade.realizedPL, 0) / portfolioState.closedTrades.length;
+
+                if (winRateElement) winRateElement.textContent = winRate + '%';
+                if (avgTradeElement) avgTradeElement.textContent = 'Avg Trade: $' + avgTrade.toFixed(2);
+            } else {
+                if (winRateElement) winRateElement.textContent = '--';
+                if (avgTradeElement) avgTradeElement.textContent = 'Avg Trade: $0.00';
+            }
+        }
+
+        // Close position functionality
+        function openCloseModal(positionId, positionType) {
+            currentClosePosition = { id: positionId, type: positionType };
+            const position = portfolioState.openPositions[positionId];
+
+            if (!position) {
+                alert('Position not found');
+                return;
+            }
+
+            // Populate position summary
+            const summaryElement = document.getElementById('closePositionSummary');
+            let summaryHTML = '';
+
+            if (positionType === 'stock') {
+                summaryHTML = `
+                    <strong>${position.symbol} Stock Position</strong><br>
+                    ${position.shares} shares @ $${position.costBasis.toFixed(2)} cost basis<br>
+                    Current Price: $${position.currentPrice.toFixed(2)}<br>
+                    Current Value: $${(position.shares * position.currentPrice).toFixed(2)}
+                `;
+            } else if (positionType === 'call') {
+                summaryHTML = `
+                    <strong>${position.symbol} Covered Call</strong><br>
+                    ${position.contracts} contracts @ $${position.strike} strike<br>
+                    Expiration: ${position.expiration}<br>
+                    Premium Collected: $${position.totalPremium.toFixed(2)}
+                `;
+            }
+
+            summaryElement.innerHTML = summaryHTML;
+
+            // Set hidden fields
+            document.getElementById('closePositionId').value = positionId;
+            document.getElementById('closePositionType').value = positionType;
+
+            // Clear form
+            document.getElementById('closeMethod').value = '';
+            updateCloseForm();
+
+            openModal('closePositionModal');
+        }
+
+        function updateCloseForm() {
+            const closeMethod = document.getElementById('closeMethod').value;
+
+            // Hide all fields first
+            document.getElementById('marketCloseFields').style.display = 'none';
+            document.getElementById('assignmentFields').style.display = 'none';
+            document.getElementById('expirationFields').style.display = 'none';
+            document.getElementById('buybackFields').style.display = 'none';
+            document.getElementById('realizedPLPreview').style.display = 'none';
+
+            if (closeMethod === 'market') {
+                document.getElementById('marketCloseFields').style.display = 'block';
+                document.getElementById('saleDate').value = new Date().toISOString().split('T')[0];
+            } else if (closeMethod === 'assignment') {
+                document.getElementById('assignmentFields').style.display = 'block';
+                document.getElementById('assignmentDate').value = new Date().toISOString().split('T')[0];
+                // Set assignment price based on position
+                if (currentClosePosition && portfolioState.openPositions[currentClosePosition.id]) {
+                    const position = portfolioState.openPositions[currentClosePosition.id];
+                    if (position.type === 'call') {
+                        document.getElementById('assignmentPrice').value = position.strike;
+                    }
+                }
+            } else if (closeMethod === 'expiration') {
+                document.getElementById('expirationFields').style.display = 'block';
+                if (currentClosePosition && portfolioState.openPositions[currentClosePosition.id]) {
+                    const position = portfolioState.openPositions[currentClosePosition.id];
+                    if (position.expiration) {
+                        document.getElementById('expirationDate').value = position.expiration;
+                    }
+                }
+            } else if (closeMethod === 'buyback') {
+                document.getElementById('buybackFields').style.display = 'block';
+                document.getElementById('buybackDate').value = new Date().toISOString().split('T')[0];
+            }
+
+            // Show P&L preview if method is selected
+            if (closeMethod) {
+                document.getElementById('realizedPLPreview').style.display = 'block';
+                calculateRealizedPL();
+            }
+        }
+
+        function calculateRealizedPL() {
+            if (!currentClosePosition) return;
+
+            const position = portfolioState.openPositions[currentClosePosition.id];
+            const closeMethod = document.getElementById('closeMethod').value;
+
+            let entryValue = 0;
+            let exitValue = 0;
+            let fees = parseFloat(document.getElementById('closeFees').value) || 0;
+
+            if (position.type === 'stock') {
+                entryValue = position.shares * position.costBasis;
+
+                if (closeMethod === 'market') {
+                    const salePrice = parseFloat(document.getElementById('salePrice').value) || 0;
+                    exitValue = position.shares * salePrice;
+                } else if (closeMethod === 'assignment') {
+                    const assignmentPrice = parseFloat(document.getElementById('assignmentPrice').value) || 0;
+                    exitValue = position.shares * assignmentPrice;
+                }
+            } else if (position.type === 'call') {
+                entryValue = 0; // We received premium
+                exitValue = position.totalPremium; // Keep the premium
+
+                if (closeMethod === 'buyback') {
+                    const buybackPrice = parseFloat(document.getElementById('buybackPrice').value) || 0;
+                    exitValue = position.totalPremium - (buybackPrice * position.contracts * 100);
+                } else if (closeMethod === 'assignment') {
+                    exitValue = position.totalPremium; // Keep premium, stock gets called away
+                }
+            }
+
+            const realizedPL = exitValue - entryValue - fees;
+
+            // Update preview
+            document.getElementById('entryValue').textContent = '$' + entryValue.toFixed(2);
+            document.getElementById('exitValue').textContent = '$' + exitValue.toFixed(2);
+            document.getElementById('totalFees').textContent = '$' + fees.toFixed(2);
+            document.getElementById('realizedPL').textContent = 'Realized P&L: $' + realizedPL.toFixed(2);
+            document.getElementById('realizedPL').className = realizedPL >= 0 ? 'profit-positive' : 'profit-negative';
+        }
+
+        // Add event listeners for real-time P&L calculation
+        document.addEventListener('DOMContentLoaded', function() {
+            ['salePrice', 'buybackPrice', 'closeFees'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', calculateRealizedPL);
+                }
+            });
+        });
+
+        function submitClosePosition() {
+            if (!currentClosePosition) return;
+
+            const position = portfolioState.openPositions[currentClosePosition.id];
+            const closeMethod = document.getElementById('closeMethod').value;
+
+            if (!closeMethod) {
+                alert('Please select a close method');
+                return;
+            }
+
+            // Calculate final realized P&L
+            calculateRealizedPL();
+            const realizedPLText = document.getElementById('realizedPL').textContent;
+            const realizedPL = parseFloat(realizedPLText.replace('Realized P&L: $', ''));
+
+            // Create closed trade record
+            const closedTrade = {
+                id: currentClosePosition.id,
+                symbol: position.symbol,
+                type: position.type,
+                closeMethod: closeMethod,
+                closeDate: new Date().toISOString().split('T')[0],
+                realizedPL: realizedPL,
+                position: { ...position }
+            };
+
+            // Move to closed trades
+            portfolioState.closedTrades.push(closedTrade);
+            portfolioState.realizedPL += realizedPL;
+
+            // Remove from open positions and update unrealized P&L
+            if (position.type === 'stock') {
+                const stockPL = (position.currentPrice - position.costBasis) * position.shares;
+                portfolioState.unrealizedPL -= stockPL;
+            } else if (position.type === 'call') {
+                portfolioState.unrealizedPL -= position.totalPremium;
+            }
+
+            delete portfolioState.openPositions[currentClosePosition.id];
+
+            // Update UI
+            const positionSection = document.getElementById(currentClosePosition.id + '-section');
+            if (positionSection) {
+                positionSection.style.opacity = '0.5';
+                positionSection.classList.add('closed');
+
+                // Update status badge
+                const statusBadge = positionSection.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.textContent = 'Closed';
+                    statusBadge.className = 'status-badge status-closed';
+                }
+
+                // Disable action buttons
+                const actionButtons = positionSection.querySelectorAll('.position-actions .btn');
+                actionButtons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                });
+            }
+
+            // Add to history
+            addToHistory(closedTrade);
+
+            // Update metrics
+            updatePLMetrics();
+
+            // Show success message
+            alert(`Position closed successfully! Realized P&L: $${realizedPL.toFixed(2)}`);
+
+            closeModal('closePositionModal');
+            currentClosePosition = null;
+        }
+
+        function addToHistory(closedTrade) {
+            // Show closed positions section
+            document.getElementById('closed-positions-section').style.display = 'block';
+
+            const historyContainer = document.getElementById('history-container');
+            const closedContainer = document.getElementById('closed-positions-container');
+
+            const historyHTML = `
+                <div class="history-item">
+                    <div class="history-header">
+                        <div class="history-symbol">${closedTrade.symbol} - ${closedTrade.type.toUpperCase()}</div>
+                        <div class="history-date">Closed: ${closedTrade.closeDate}</div>
+                    </div>
+                    <div class="history-details">
+                        <div>Method: ${closedTrade.closeMethod}</div>
+                        <div>Realized P&L: <span class="${closedTrade.realizedPL >= 0 ? 'profit-positive' : 'profit-negative'}">$${closedTrade.realizedPL.toFixed(2)}</span></div>
+                    </div>
+                </div>
+            `;
+
+            // Add to both history tab and closed positions section
+            if (historyContainer.querySelector('.metric-card')) {
+                historyContainer.innerHTML = '<h3 style="color: #e2e8f0; margin-bottom: 20px;">Completed Trades</h3>';
+            }
+            historyContainer.insertAdjacentHTML('beforeend', historyHTML);
+            closedContainer.insertAdjacentHTML('beforeend', historyHTML);
+        }
+
+        // Other position management functions
+        function editPosition(positionId) {
+            // Get position data from portfolioState
+            const position = portfolioState.openPositions[positionId];
+            
+            if (!position) {
+                alert('Position not found');
+                return;
+            }
+
+            // Set position ID and type in the modal
+            document.getElementById('editPositionId').value = positionId;
+            document.getElementById('editPositionType').value = position.type;
+            document.getElementById('editPositionSymbol').textContent = position.symbol;
+            document.getElementById('editPositionTypeDisplay').value = position.type.toUpperCase();
+
+            // Hide all form sections first
+            document.getElementById('editStockFields').style.display = 'none';
+            document.getElementById('editCSPFields').style.display = 'none';
+            document.getElementById('editCallFields').style.display = 'none';
+
+            // Show and populate appropriate form section based on position type
+            if (position.type === 'stock') {
+                document.getElementById('editStockFields').style.display = 'block';
+                document.getElementById('editShares').value = position.shares || 0;
+                document.getElementById('editCostBasis').value = position.costBasis || 0;
+                document.getElementById('editCurrentPrice').value = position.currentPrice || 0;
+            } else if (position.type === 'csp') {
+                document.getElementById('editCSPFields').style.display = 'block';
+                document.getElementById('editCSPStrike').value = position.strike || 0;
+                document.getElementById('editCSPExpiration').value = position.expiration || '';
+                document.getElementById('editCSPContracts').value = position.contracts || 0;
+                document.getElementById('editCSPPremium').value = position.premiumReceived || 0;
+            } else if (position.type === 'call') {
+                document.getElementById('editCallFields').style.display = 'block';
+                document.getElementById('editCallStrike').value = position.strike || 0;
+                document.getElementById('editCallExpiration').value = position.expiration || '';
+                document.getElementById('editCallContracts').value = position.contracts || 0;
+                document.getElementById('editCallPremium').value = position.premiumReceived || 0;
+            }
+
+            // Open the edit modal
+            openModal('editPositionModal');
+        }
+
+        function submitEditPosition() {
+            const positionId = document.getElementById('editPositionId').value;
+            const positionType = document.getElementById('editPositionType').value;
+            
+            // Get the position from portfolioState
+            const position = portfolioState.openPositions[positionId];
+            
+            if (!position) {
+                alert('Position not found');
+                return;
+            }
+
+            // Update position data based on type
+            let isValid = true;
+            
+            if (positionType === 'stock') {
+                const shares = parseFloat(document.getElementById('editShares').value);
+                const costBasis = parseFloat(document.getElementById('editCostBasis').value);
+                const currentPrice = parseFloat(document.getElementById('editCurrentPrice').value);
+                
+                if (isNaN(shares) || isNaN(costBasis) || isNaN(currentPrice) || 
+                    shares < 0 || costBasis < 0 || currentPrice < 0) {
+                    alert('Please enter valid positive numbers for all fields');
+                    isValid = false;
+                } else {
+                    position.shares = shares;
+                    position.costBasis = costBasis;
+                    position.currentPrice = currentPrice;
+                }
+            } else if (positionType === 'csp') {
+                const strike = parseFloat(document.getElementById('editCSPStrike').value);
+                const expiration = document.getElementById('editCSPExpiration').value;
+                const contracts = parseInt(document.getElementById('editCSPContracts').value);
+                const premium = parseFloat(document.getElementById('editCSPPremium').value);
+                
+                if (isNaN(strike) || !expiration || isNaN(contracts) || isNaN(premium) ||
+                    strike <= 0 || contracts < 1 || premium < 0) {
+                    alert('Please enter valid values for all fields');
+                    isValid = false;
+                } else {
+                    position.strike = strike;
+                    position.expiration = expiration;
+                    position.contracts = contracts;
+                    position.premiumReceived = premium;
+                    position.totalPremium = premium * contracts * 100; // Options are per 100 shares
+                }
+            } else if (positionType === 'call') {
+                const strike = parseFloat(document.getElementById('editCallStrike').value);
+                const expiration = document.getElementById('editCallExpiration').value;
+                const contracts = parseInt(document.getElementById('editCallContracts').value);
+                const premium = parseFloat(document.getElementById('editCallPremium').value);
+                
+                if (isNaN(strike) || !expiration || isNaN(contracts) || isNaN(premium) ||
+                    strike <= 0 || contracts < 1 || premium < 0) {
+                    alert('Please enter valid values for all fields');
+                    isValid = false;
+                } else {
+                    position.strike = strike;
+                    position.expiration = expiration;
+                    position.contracts = contracts;
+                    position.premiumReceived = premium;
+                    position.totalPremium = premium * contracts * 100; // Options are per 100 shares
+                }
+            }
+            
+            if (isValid) {
+                // Update the active trade's positions as well
+                for (const [symbol, trade] of Object.entries(portfolioState.activeTrades || {})) {
+                    if (trade.positions && trade.positions[positionId]) {
+                        trade.positions[positionId] = { ...position };
+                        break;
+                    }
+                }
+                
+                // Save to localStorage
+                savePortfolioState();
+                
+                // Update the display
+                updatePositionDisplay(positionId, position);
+                
+                // Update P&L metrics
+                updatePLMetrics();
+                
+                // Show success notification
+                showNotification('Position updated successfully!', 'success');
+                
+                // Close modal
+                closeModal('editPositionModal');
+            }
+        }
+
+        function updatePositionDisplay(positionId, position) {
+            // Update the position display in the UI
+            if (position.type === 'stock') {
+                const sharesElement = document.getElementById(positionId + '-shares');
+                const costBasisElement = document.getElementById(positionId + '-cost-basis');
+                const currentPriceElement = document.getElementById(positionId + '-current-price');
+                const totalValueElement = document.getElementById(positionId + '-total-value');
+                const plElement = document.getElementById(positionId + '-pl');
+                
+                if (sharesElement) sharesElement.textContent = position.shares;
+                if (costBasisElement) costBasisElement.textContent = '$' + position.costBasis.toFixed(2);
+                if (currentPriceElement) currentPriceElement.textContent = '$' + position.currentPrice.toFixed(2);
+                if (totalValueElement) totalValueElement.textContent = '$' + (position.shares * position.currentPrice).toFixed(2);
+                if (plElement) {
+                    const pl = (position.currentPrice - position.costBasis) * position.shares;
+                    plElement.textContent = '$' + pl.toFixed(2);
+                    plElement.className = 'detail-value ' + (pl >= 0 ? 'profit-positive' : 'profit-negative');
+                }
+            } else if (position.type === 'csp' || position.type === 'call') {
+                const strikeElement = document.getElementById(positionId + '-strike');
+                const expirationElement = document.getElementById(positionId + '-expiration');
+                const contractsElement = document.getElementById(positionId + '-contracts');
+                const premiumElement = document.getElementById(positionId + '-premium');
+                const totalElement = document.getElementById(positionId + '-total');
+                
+                if (strikeElement) strikeElement.textContent = '$' + position.strike.toFixed(2);
+                if (expirationElement) expirationElement.textContent = position.expiration;
+                if (contractsElement) contractsElement.textContent = position.contracts + 'x';
+                if (premiumElement) premiumElement.textContent = '$' + position.premiumReceived.toFixed(2);
+                if (totalElement) totalElement.textContent = '$' + position.totalPremium.toFixed(2);
+            }
+        }
+
+        function deletePosition(positionId) {
+            if (confirm('Are you sure you want to delete this position?')) {
+                delete portfolioState.openPositions[positionId];
+                const positionSection = document.getElementById(positionId + '-section');
+                if (positionSection) {
+                    positionSection.remove();
+                }
+                updatePLMetrics();
+            }
+        }
+
+        function expirePosition(positionId) {
+            openCloseModal(positionId, 'call');
+            document.getElementById('closeMethod').value = 'expiration';
+            updateCloseForm();
+        }
+
+        function rollPosition(positionId) {
+            alert('Roll functionality for ' + positionId + ' - Roll modal would open here');
+        }
+
+        function submitNewTrade() {
+            const symbol = document.getElementById('newTradeSymbol').value.trim().toUpperCase();
+            const strategy = document.getElementById('newTradeStrategy').value;
+            const capital = parseFloat(document.getElementById('newTradeCapital').value);
+
+            if (symbol && strategy && capital) {
+                // Check if trade already exists
+                if (portfolioState.activeTrades[symbol]) {
+                    alert('A trade for ' + symbol + ' already exists. Please add positions to the existing trade or use a different symbol.');
+                    return;
+                }
+
+                // Create new trade
+                const newTrade = {
+                    symbol: symbol,
+                    capital: capital,
+                    strategy: strategy,
+                    createdAt: new Date().toISOString(),
+                    positions: {}
+                };
+
+                // Add to portfolio state
+                portfolioState.activeTrades[symbol] = newTrade;
+
+                // Create initial position based on strategy
+                if (strategy === 'stock') {
+                    // For direct stock purchase, we'd typically need more info
+                    // For now, create a placeholder that user can edit
+                    const stockPositionId = symbol.toLowerCase() + '-stock';
+                    const stockPosition = {
+                        type: 'stock',
+                        symbol: symbol,
+                        shares: 0,
+                        costBasis: 0,
+                        currentPrice: 0,
+                        status: 'open'
+                    };
+                    
+                    newTrade.positions[stockPositionId] = stockPosition;
+                    portfolioState.openPositions[stockPositionId] = stockPosition;
+                } else if (strategy === 'csp') {
+                    // For CSP strategy, create a CSP position placeholder
+                    const cspPositionId = symbol.toLowerCase() + '-csp';
+                    const cspPosition = {
+                        type: 'csp',
+                        symbol: symbol,
+                        strike: 0,
+                        expiration: '',
+                        contracts: 0,
+                        premiumReceived: 0,
+                        totalPremium: 0,
+                        status: 'open'
+                    };
+                    
+                    newTrade.positions[cspPositionId] = cspPosition;
+                    portfolioState.openPositions[cspPositionId] = cspPosition;
+                }
+
+                // Save to localStorage
+                savePortfolioState();
+
+                // Render the new trade on the dashboard
+                renderTrade(symbol, newTrade);
+
+                // Update metrics
+                updatePLMetrics();
+
+                // Show success message
+                showNotification('Trade created successfully for ' + symbol + '!', 'success');
+
+                // Clear form and close modal
+                document.getElementById('newTradeForm').reset();
+                closeModal('newTradeModal');
+            } else {
+                alert('Please fill in all required fields');
+            }
+        }
+
+        function renderTrade(symbol, trade) {
+            const tradeContainer = document.querySelector('.section-title + div') || 
+                                 document.querySelector('#dashboard-tab');
+            
+            // Find the active trades section
+            let activeTradesSection = document.querySelector('h2.section-title');
+            if (!activeTradesSection) return;
+            
+            // Create trade card HTML
+            const tradeCard = document.createElement('div');
+            tradeCard.className = 'trade-card';
+            tradeCard.id = symbol.toLowerCase() + '-trade';
+            tradeCard.setAttribute('data-symbol', symbol);
+
+            let positionsHTML = '';
+            
+            // Generate positions HTML based on trade positions
+            for (const [positionId, position] of Object.entries(trade.positions)) {
+                if (position.type === 'stock') {
+                    positionsHTML += generateStockPositionHTML(positionId, position);
+                } else if (position.type === 'csp') {
+                    positionsHTML += generateCSPPositionHTML(positionId, position);
+                } else if (position.type === 'call') {
+                    positionsHTML += generateCallPositionHTML(positionId, position);
+                }
+            }
+
+            tradeCard.innerHTML = `
+                <div class="trade-header">
+                    <div>
+                        <div class="trade-symbol">${symbol}</div>
+                        <div class="trade-subtitle">Wheel Strategy Position</div>
+                    </div>
+                    <div class="status-badge status-open">Active</div>
+                </div>
+                <div class="position-grid">
+                    ${positionsHTML}
+                    <!-- Add Position Section -->
+                    <div class="add-position-btn" onclick="openModal('addPositionModal', '${symbol}')">
+                        ➕ Add Cash-Secured Put or Additional Position
+                    </div>
+                </div>
+            `;
+
+            // Insert after the existing DFH trade or after the Active Trades section
+            const existingTrade = document.querySelector('.trade-card');
+            if (existingTrade && existingTrade.nextSibling) {
+                existingTrade.parentNode.insertBefore(tradeCard, existingTrade.nextSibling);
+            } else if (existingTrade) {
+                existingTrade.parentNode.appendChild(tradeCard);
+            } else {
+                activeTradesSection.parentNode.insertBefore(tradeCard, activeTradesSection.nextSibling);
+            }
+        }
+
+        function generateStockPositionHTML(positionId, position) {
+            return `
+                <div class="position-section stock" id="${positionId}-section" data-status="open">
+                    <div class="position-title">
+                        📈 Stock Position
+                        <button class="btn btn-sm btn-edit" onclick="editPosition('${positionId}')">
+                            ✏️ Edit
+                        </button>
+                    </div>
+                    <div class="position-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Shares</div>
+                            <div class="detail-value" id="${positionId}-shares">${position.shares}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Cost Basis</div>
+                            <div class="detail-value" id="${positionId}-cost-basis">$${position.costBasis.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Current Price</div>
+                            <div class="detail-value" contenteditable="true" id="${positionId}-current-price" 
+                                 style="background: #f8fafc; padding: 4px 8px; border-radius: 4px; cursor: text;">
+                                 $${position.currentPrice.toFixed(2)}
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Total Value</div>
+                            <div class="detail-value" id="${positionId}-total-value">$${(position.shares * position.currentPrice).toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Unrealized P&L</div>
+                            <div class="detail-value" id="${positionId}-pl">$${((position.currentPrice - position.costBasis) * position.shares).toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Position Status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-open" id="${positionId}-status">Open</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="position-actions">
+                        <button class="btn btn-sm btn-edit" onclick="editPosition('${positionId}')">✏️ Edit</button>
+                        <button class="btn btn-sm btn-close" onclick="openCloseModal('${positionId}', 'stock')">🔒 Close Position</button>
+                        <button class="btn btn-sm btn-success" onclick="openModal('newCoveredCallModal', '${position.symbol}')">📞 Add Covered Call</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateCSPPositionHTML(positionId, position) {
+            return `
+                <div class="position-section csp" id="${positionId}-section" data-status="open">
+                    <div class="position-title">
+                        💰 Cash-Secured Put
+                        <button class="btn btn-sm btn-edit" onclick="editPosition('${positionId}')">
+                            ✏️ Edit
+                        </button>
+                    </div>
+                    <div class="position-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Strike Price</div>
+                            <div class="detail-value" id="${positionId}-strike">$${position.strike.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Expiration</div>
+                            <div class="detail-value" id="${positionId}-expiration">${position.expiration}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Contracts</div>
+                            <div class="detail-value" id="${positionId}-contracts">${position.contracts}x</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Premium Collected</div>
+                            <div class="detail-value" id="${positionId}-premium">$${position.premiumReceived.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Total Premium</div>
+                            <div class="detail-value profit-positive" id="${positionId}-total">$${position.totalPremium.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Position Status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-open" id="${positionId}-status">Open</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="position-actions">
+                        <button class="btn btn-sm btn-edit" onclick="editPosition('${positionId}')">✏️ Edit</button>
+                        <button class="btn btn-sm btn-delete" onclick="deletePosition('${positionId}')">🗑 Delete</button>
+                        <button class="btn btn-sm btn-close" onclick="openCloseModal('${positionId}', 'csp')">🔒 Close Position</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateCallPositionHTML(positionId, position) {
+            return `
+                <div class="position-section call" id="${positionId}-section" data-status="open">
+                    <div class="position-title">
+                        📞 Covered Calls
+                        <button class="btn btn-sm btn-success" onclick="openModal('newCoveredCallModal', '${position.symbol}')">
+                            ➕ Add Call
+                        </button>
+                    </div>
+                    <div class="position-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Strike Price</div>
+                            <div class="detail-value" id="${positionId}-strike">$${position.strike.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Expiration</div>
+                            <div class="detail-value" id="${positionId}-expiration">${position.expiration}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Contracts</div>
+                            <div class="detail-value" id="${positionId}-contracts">${position.contracts}x</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Premium Collected</div>
+                            <div class="detail-value" id="${positionId}-premium">$${position.premiumReceived.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Total Premium</div>
+                            <div class="detail-value profit-positive" id="${positionId}-total">$${position.totalPremium.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Position Status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-open" id="${positionId}-status">Open</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="position-actions">
+                        <button class="btn btn-sm btn-edit" onclick="editPosition('${positionId}')">✏️ Edit</button>
+                        <button class="btn btn-sm btn-delete" onclick="deletePosition('${positionId}')">🗑 Delete</button>
+                        <button class="btn btn-sm btn-close" onclick="openCloseModal('${positionId}', 'call')">🔒 Close Position</button>
+                        <button class="btn btn-sm btn-expire" onclick="expirePosition('${positionId}')">⏰ Mark Expired</button>
+                        <button class="btn btn-sm btn-roll" onclick="rollPosition('${positionId}')">🔄 Roll</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function savePortfolioState() {
+            try {
+                localStorage.setItem('wheelStrategyPortfolio', JSON.stringify(portfolioState));
+            } catch (error) {
+                console.error('Failed to save portfolio state:', error);
+                alert('Failed to save data to browser storage. Please try again.');
+            }
+        }
+
+        function loadPortfolioState() {
+            try {
+                const saved = localStorage.getItem('wheelStrategyPortfolio');
+                if (saved) {
+                    const loadedState = JSON.parse(saved);
+                    // Merge with default state to ensure all properties exist
+                    portfolioState = { ...portfolioState, ...loadedState };
+                    
+                    // Render all active trades
+                    for (const [symbol, trade] of Object.entries(portfolioState.activeTrades || {})) {
+                        if (symbol !== 'DFH') { // DFH is already rendered in HTML
+                            renderTrade(symbol, trade);
+                        }
+                    }
+                    
+                    // Update metrics
+                    updatePLMetrics();
+                }
+            } catch (error) {
+                console.error('Failed to load portfolio state:', error);
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 10000;
+                max-width: 300px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            `;
+            
+            if (type === 'success') {
+                notification.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+            } else if (type === 'error') {
+                notification.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+            } else {
+                notification.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+            }
+            
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', function() {
+            loadPortfolioState();
+        });
+
+        function submitPosition() {
+            const positionType = document.getElementById('positionType').value;
+
+            if (positionType) {
+                alert('New ' + positionType + ' position would be added');
+                closeModal('addPositionModal');
+            } else {
+                alert('Please select a position type');
+            }
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+<!-- Updated Thu Sep 11 01:57:40 UTC 2025 -->
