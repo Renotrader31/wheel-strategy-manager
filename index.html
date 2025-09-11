@@ -1819,17 +1819,25 @@
         }
 
         function saveCurrentPrice(positionId) {
+            console.log('🔧 DEBUG: saveCurrentPrice called with positionId:', positionId);
             const currentPriceElement = document.getElementById(positionId + '-current-price');
-            if (!currentPriceElement) return;
+            console.log('🔧 DEBUG: Found element:', currentPriceElement);
+            if (!currentPriceElement) {
+                console.log('🔧 DEBUG: Element not found, returning');
+                return;
+            }
 
             // Get the text content and parse the price
             let priceText = currentPriceElement.textContent.trim();
+            console.log('🔧 DEBUG: Original text:', priceText);
             
             // Remove $ sign if present
             priceText = priceText.replace('$', '');
+            console.log('🔧 DEBUG: Cleaned text:', priceText);
             
             // Parse the price
             const newPrice = parseFloat(priceText);
+            console.log('🔧 DEBUG: Parsed price:', newPrice);
             
             if (isNaN(newPrice) || newPrice < 0) {
                 // Invalid price - revert to original value
@@ -1842,7 +1850,9 @@
             }
 
             // Update the position in portfolioState
+            console.log('🔧 DEBUG: Checking portfolioState:', portfolioState);
             const position = portfolioState.openPositions[positionId];
+            console.log('🔧 DEBUG: Found position:', position);
             if (position && position.type === 'stock') {
                 const oldPrice = position.currentPrice;
                 position.currentPrice = newPrice;
@@ -1874,15 +1884,23 @@
                 }
 
                 // Save to localStorage
+                console.log('🔧 DEBUG: Calling savePortfolioState()');
                 savePortfolioState();
+                console.log('🔧 DEBUG: Portfolio state saved');
 
                 // Update overall P&L metrics
+                console.log('🔧 DEBUG: Calling updatePLMetrics()');
                 updatePLMetrics();
 
                 // Show success notification
                 if (oldPrice !== newPrice) {
+                    console.log('🔧 DEBUG: Price changed, showing notification');
                     showNotification(`Current price updated to $${newPrice.toFixed(2)}`, 'success');
+                } else {
+                    console.log('🔧 DEBUG: Price unchanged');
                 }
+            } else {
+                console.log('🔧 DEBUG: Position not found or not a stock position');
             }
         }
 
@@ -2175,11 +2193,15 @@
 
         function loadPortfolioState() {
             try {
+                console.log('🔧 DEBUG: Loading portfolio state from localStorage');
                 const saved = localStorage.getItem('wheelStrategyPortfolio');
+                console.log('🔧 DEBUG: Saved data from localStorage:', saved);
                 if (saved) {
                     const loadedState = JSON.parse(saved);
+                    console.log('🔧 DEBUG: Parsed loaded state:', loadedState);
                     // Merge with default state to ensure all properties exist
                     portfolioState = { ...portfolioState, ...loadedState };
+                    console.log('🔧 DEBUG: Merged portfolio state:', portfolioState);
                     
                     // Render all active trades
                     for (const [symbol, trade] of Object.entries(portfolioState.activeTrades || {})) {
@@ -2234,7 +2256,9 @@
 
         // Initialize on page load
         window.addEventListener('load', function() {
+            console.log('🔧 DEBUG: Page loaded, calling loadPortfolioState');
             loadPortfolioState();
+            console.log('🔧 DEBUG: Final portfolioState after load:', portfolioState);
         });
 
         function submitPosition() {
