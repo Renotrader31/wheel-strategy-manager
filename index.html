@@ -662,7 +662,9 @@
                                 <div class="detail-label">Current Price</div>
                                 <div class="detail-value" contenteditable="true" id="dfh-current-price" 
                                      style="background: #e3f2fd; padding: 4px 8px; border-radius: 4px; cursor: text; border: 2px dashed #2196f3;"
-                                     onblur="saveCurrentPrice('dfh-stock')" onkeydown="if(event.key==='Enter'){this.blur()}"
+                                     onblur="console.log('🔧 EVENT: onblur fired for dfh-stock'); saveCurrentPrice('dfh-stock')" 
+                                     onkeydown="console.log('🔧 EVENT: onkeydown fired, key:', event.key); if(event.key==='Enter'){this.blur()}"
+                                     onfocus="console.log('🔧 EVENT: onfocus fired for dfh-stock')"
                                      title="✏️ EDITABLE: Click to edit price - SAVES AUTOMATICALLY">
                                      $30.99 ✏️
                                 </div>
@@ -1831,8 +1833,8 @@
             let priceText = currentPriceElement.textContent.trim();
             console.log('🔧 DEBUG: Original text:', priceText);
             
-            // Remove $ sign if present
-            priceText = priceText.replace('$', '');
+            // Remove $ sign and emoji if present
+            priceText = priceText.replace('$', '').replace('✏️', '').trim();
             console.log('🔧 DEBUG: Cleaned text:', priceText);
             
             // Parse the price
@@ -1843,7 +1845,7 @@
                 // Invalid price - revert to original value
                 const position = portfolioState.openPositions[positionId];
                 if (position && position.currentPrice !== undefined) {
-                    currentPriceElement.textContent = '$' + position.currentPrice.toFixed(2);
+                    currentPriceElement.textContent = '$' + position.currentPrice.toFixed(2) + ' ✏️';
                 }
                 showNotification('Invalid price entered. Please enter a valid number.', 'error');
                 return;
@@ -1857,8 +1859,8 @@
                 const oldPrice = position.currentPrice;
                 position.currentPrice = newPrice;
 
-                // Format the display with $ sign
-                currentPriceElement.textContent = '$' + newPrice.toFixed(2);
+                // Format the display with $ sign and edit icon
+                currentPriceElement.textContent = '$' + newPrice.toFixed(2) + ' ✏️';
 
                 // Update related calculations (total value, unrealized P&L)
                 const totalValueElement = document.getElementById(positionId + '-total-value');
@@ -2059,7 +2061,9 @@
                             <div class="detail-label">Current Price</div>
                             <div class="detail-value" contenteditable="true" id="${positionId}-current-price" 
                                  style="background: #e3f2fd; padding: 4px 8px; border-radius: 4px; cursor: text; border: 2px dashed #2196f3;"
-                                 onblur="saveCurrentPrice('${positionId}')" onkeydown="if(event.key==='Enter'){this.blur()}"
+                                 onblur="console.log('🔧 EVENT: onblur fired for ${positionId}'); saveCurrentPrice('${positionId}')" 
+                                 onkeydown="console.log('🔧 EVENT: onkeydown fired, key:', event.key); if(event.key==='Enter'){this.blur()}"
+                                 onfocus="console.log('🔧 EVENT: onfocus fired for ${positionId}')"
                                  title="✏️ EDITABLE: Click to edit price - SAVES AUTOMATICALLY">
                                  $${position.currentPrice.toFixed(2)} ✏️
                             </div>
