@@ -685,7 +685,7 @@
                         <div class="position-actions">
                             <button class="btn btn-sm btn-edit" onclick="editPosition('dfh-stock')">✏️ Edit</button>
                             <button class="btn btn-sm btn-close" onclick="openCloseModal('dfh-stock', 'stock')">🔒 Close Position</button>
-                            <button class="btn btn-sm btn-success" onclick="openModal('newCoveredCallModal', 'DFH')">📞 Add Covered Call</button>
+                            <button class="btn btn-sm btn-success" onclick="openModal('addPositionModal', 'DFH')">📞 Add Covered Call</button>
                         </div>
                     </div>
 
@@ -693,7 +693,7 @@
                     <div class="position-section call" id="dfh-call-section" data-status="open">
                         <div class="position-title">
                             📞 Covered Calls
-                            <button class="btn btn-sm btn-success" onclick="openModal('newCoveredCallModal', 'DFH')">
+                            <button class="btn btn-sm btn-success" onclick="openModal('addPositionModal', 'DFH')">
                                 ➕ Add Call
                             </button>
                         </div>
@@ -1998,7 +1998,7 @@
                     <div class="position-actions">
                         <button class="btn btn-sm btn-edit" onclick="editPosition('${positionId}')">✏️ Edit</button>
                         <button class="btn btn-sm btn-close" onclick="openCloseModal('${positionId}', 'stock')">🔒 Close Position</button>
-                        <button class="btn btn-sm btn-success" onclick="openModal('newCoveredCallModal', '${position.symbol}')">📞 Add Covered Call</button>
+                        <button class="btn btn-sm btn-success" onclick="openModal('addPositionModal', '${position.symbol}')">📞 Add Covered Call</button>
                     </div>
                 </div>
             `;
@@ -2055,7 +2055,7 @@
                 <div class="position-section call" id="${positionId}-section" data-status="open">
                     <div class="position-title">
                         📞 Covered Calls
-                        <button class="btn btn-sm btn-success" onclick="openModal('newCoveredCallModal', '${position.symbol}')">
+                        <button class="btn btn-sm btn-success" onclick="openModal('addPositionModal', '${position.symbol}')">
                             ➕ Add Call
                         </button>
                     </div>
@@ -2194,6 +2194,7 @@
             let isValid = true;
             let errorMessage = '';
             let position = {};
+            let positionId = '';
 
             try {
                 if (positionType === 'csp') {
@@ -2218,7 +2219,7 @@
                     }
 
                     if (isValid) {
-                        const positionId = symbol.toLowerCase() + '-csp-' + Date.now();
+                        positionId = symbol.toLowerCase() + '-csp-' + Date.now();
                         position = {
                             type: 'csp',
                             symbol: symbol,
@@ -2246,7 +2247,7 @@
                     }
 
                     if (isValid) {
-                        const positionId = symbol.toLowerCase() + '-stock-' + Date.now();
+                        positionId = symbol.toLowerCase() + '-stock-' + Date.now();
                         position = {
                             type: 'stock',
                             symbol: symbol,
@@ -2280,7 +2281,7 @@
                     }
 
                     if (isValid) {
-                        const positionId = symbol.toLowerCase() + '-call-' + Date.now();
+                        positionId = symbol.toLowerCase() + '-call-' + Date.now();
                         position = {
                             type: 'call',
                             symbol: symbol,
@@ -2300,10 +2301,7 @@
                     return;
                 }
 
-                // Generate unique position ID
-                const positionId = symbol.toLowerCase() + '-' + positionType + '-' + Date.now();
-
-                // Add position to portfolioState
+                // Add position to portfolioState (positionId was already generated in the type-specific blocks above)
                 portfolioState.openPositions[positionId] = position;
 
                 // Also add to activeTrades structure if the trade exists
