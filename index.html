@@ -2182,11 +2182,223 @@
         function submitPosition() {
             const positionType = document.getElementById('positionType').value;
 
-            if (positionType) {
-                alert('New ' + positionType + ' position would be added');
-                closeModal('addPositionModal');
-            } else {
+            if (!positionType) {
                 alert('Please select a position type');
+                return;
+            }
+
+            // Get the symbol from the modal or form context
+            const symbolElement = document.getElementById('modalSymbol');
+            const symbol = symbolElement ? symbolElement.textContent : 'UNKNOWN';
+
+            let isValid = true;
+            let errorMessage = '';
+            let position = {};
+
+            try {
+                if (positionType === 'csp') {
+                    // Cash-Secured Put validation and creation
+                    const contracts = parseFloat(document.getElementById('cspContracts').value);
+                    const strike = parseFloat(document.getElementById('cspStrike').value);
+                    const expiration = document.getElementById('cspExpiration').value;
+                    const premium = parseFloat(document.getElementById('cspPremium').value);
+
+                    if (!contracts || contracts <= 0) {
+                        errorMessage = 'Please enter a valid number of contracts';
+                        isValid = false;
+                    } else if (!strike || strike <= 0) {
+                        errorMessage = 'Please enter a valid strike price';
+                        isValid = false;
+                    } else if (!expiration) {
+                        errorMessage = 'Please select an expiration date';
+                        isValid = false;
+                    } else if (!premium || premium <= 0) {
+                        errorMessage = 'Please enter a valid premium amount';
+                        isValid = false;
+                    }
+
+                    if (isValid) {
+                        const positionId = symbol.toLowerCase() + '-csp-' + Date.now();
+                        position = {
+                            type: 'csp',
+                            symbol: symbol,
+                            contracts: contracts,
+                            strike: strike,
+                            expiration: expiration,
+                            premiumReceived: premium,
+                            totalPremium: premium * contracts * 100,
+                            status: 'open',
+                            createdAt: new Date().toISOString()
+                        };
+                    }
+
+                } else if (positionType === 'stock') {
+                    // Stock purchase validation and creation
+                    const shares = parseFloat(document.getElementById('stockShares').value);
+                    const price = parseFloat(document.getElementById('stockPrice').value);
+
+                    if (!shares || shares <= 0) {
+                        errorMessage = 'Please enter a valid number of shares';
+                        isValid = false;
+                    } else if (!price || price <= 0) {
+                        errorMessage = 'Please enter a valid stock price';
+                        isValid = false;
+                    }
+
+                    if (isValid) {
+                        const positionId = symbol.toLowerCase() + '-stock-' + Date.now();
+                        position = {
+                            type: 'stock',
+                            symbol: symbol,
+                            shares: shares,
+                            costBasis: price,
+                            currentPrice: price, // Initialize current price to purchase price
+                            status: 'open',
+                            createdAt: new Date().toISOString()
+                        };
+                    }
+
+                } else if (positionType === 'coveredcall') {
+                    // Covered Call validation and creation
+                    const contracts = parseFloat(document.getElementById('callContracts').value);
+                    const strike = parseFloat(document.getElementById('callStrike').value);
+                    const expiration = document.getElementById('callExpiration').value;
+                    const premium = parseFloat(document.getElementById('callPremium').value);
+
+                    if (!contracts || contracts <= 0) {
+                        errorMessage = 'Please enter a valid number of contracts';
+                        isValid = false;
+                    } else if (!strike || strike <= 0) {
+                        errorMessage = 'Please enter a valid strike price';
+                        isValid = false;
+                    } else if (!expiration) {
+                        errorMessage = 'Please select an expiration date';
+                        isValid = false;
+                    } else if (!premium || premium <= 0) {
+                        errorMessage = 'Please enter a valid premium amount';
+                        isValid = false;
+                    }
+
+                    if (isValid) {
+                        const positionId = symbol.toLowerCase() + '-call-' + Date.now();
+                        position = {
+                            type: 'call',
+                            symbol: symbol,
+                            contracts: contracts,
+                            strike: strike,
+                            expiration: expiration,
+                            premiumReceived: premium,
+                            totalPremium: premium * contracts * 100,
+                            status: 'open',
+                            createdAt: new Date().toISOString()
+                        };
+                    }
+                }
+
+                if (!isValid) {
+                    alert(errorMessage);
+                    return;
+                }
+
+                // Generate unique position ID
+                const positionId = symbol.toLowerCase() + '-' + positionType + '-' + Date.now();
+
+                // Add position to portfolioState
+                portfolioState.openPositions[positionId] = position;
+
+                // Also add to activeTrades structure if the trade exists
+                if (!portfolioState.activeTrades[symbol]) {
+                    portfolioState.activeTrades[symbol] = {
+                        symbol: symbol,
+                        capital: 0, // Will need to be set manually or calculated
+                        strategy: positionType,
+                        createdAt: new Date().toISOString(),
+                        positions: {}
+                    };
+                }
+                portfolioState.activeTrades[symbol].positions[positionId] = position;
+
+                // Update unrealized P&L if applicable
+                if (positionType === 'coveredcall' || positionType === 'csp') {
+                    portfolioState.unrealizedPL += position.totalPremium;
+                }
+
+                // Add the position to the UI
+                addPositionToUI(positionId, position, symbol);
+
+                // Save to localStorage
+                localStorage.setItem('wheelStrategyData', JSON.stringify(portfolioState));
+
+                // Update metrics
+                updatePLMetrics();
+
+                // Show success message and close modal
+                alert(`${positionType.charAt(0).toUpperCase() + positionType.slice(1)} position added successfully!`);
+                closeModal('addPositionModal');
+
+                // Clear the form
+                document.getElementById('addPositionForm').reset();
+                updatePositionForm();
+
+            } catch (error) {
+                console.error('Error adding position:', error);
+                alert('Error adding position. Please check your input and try again.');
+            }
+        }
+
+        // Function to dynamically add position to UI
+        function addPositionToUI(positionId, position, symbol) {
+            // Find the appropriate trade container
+            let tradeContainer = null;
+
+            // Look for existing trade card for this symbol
+            const tradeCards = document.querySelectorAll('.trade-card');
+            for (let card of tradeCards) {
+                const cardSymbol = card.querySelector('h2')?.textContent?.includes(symbol);
+                if (cardSymbol) {
+                    tradeContainer = card.querySelector('.positions-list');
+                    break;
+                }
+            }
+
+            // If no existing trade container found, create a new trade card
+            if (!tradeContainer) {
+                const activeTradesSection = document.getElementById('active-trades');
+                const newTradeCard = document.createElement('div');
+                newTradeCard.className = 'trade-card';
+                newTradeCard.innerHTML = `
+                    <div class="trade-header">
+                        <h2>📊 ${symbol} Wheel Trade</h2>
+                        <div class="trade-meta">
+                            <span class="status-badge status-active">Active</span>
+                            <span class="capital-badge">Capital: $0</span>
+                        </div>
+                    </div>
+                    <div class="positions-list">
+                        <!-- Add Position Section -->
+                        <div class="add-position-btn" onclick="openModal('addPositionModal', '${symbol}')">
+                            ➕ Add Cash-Secured Put or Additional Position
+                        </div>
+                    </div>
+                `;
+                activeTradesSection.appendChild(newTradeCard);
+                tradeContainer = newTradeCard.querySelector('.positions-list');
+            }
+
+            // Generate the position HTML based on type
+            let positionHTML = '';
+            if (position.type === 'stock') {
+                positionHTML = generateStockPositionHTML(positionId, position);
+            } else if (position.type === 'call') {
+                positionHTML = generateCallPositionHTML(positionId, position);
+            } else if (position.type === 'csp') {
+                positionHTML = generateCSPPositionHTML(positionId, position);
+            }
+
+            // Insert the new position before the "Add Position" button
+            const addPositionBtn = tradeContainer.querySelector('.add-position-btn');
+            if (addPositionBtn && positionHTML) {
+                addPositionBtn.insertAdjacentHTML('beforebegin', positionHTML);
             }
         }
 
