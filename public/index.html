@@ -2340,7 +2340,14 @@
 
             } catch (error) {
                 console.error('Error adding position:', error);
-                alert('Error adding position. Please check your input and try again.');
+                console.error('Error details:', {
+                    positionType: positionType,
+                    symbol: symbol,
+                    positionId: positionId,
+                    position: position,
+                    portfolioState: portfolioState
+                });
+                alert('Error adding position: ' + error.message + '. Please check your input and try again.');
             }
         }
 
@@ -2352,9 +2359,14 @@
             // Look for existing trade card for this symbol
             const tradeCards = document.querySelectorAll('.trade-card');
             for (let card of tradeCards) {
-                const cardSymbol = card.querySelector('h2')?.textContent?.includes(symbol);
-                if (cardSymbol) {
-                    tradeContainer = card.querySelector('.positions-list');
+                // Check both h2 (new structure) and trade-symbol (existing DFH structure)
+                const cardSymbolH2 = card.querySelector('h2')?.textContent?.includes(symbol);
+                const cardSymbolDiv = card.querySelector('.trade-symbol')?.textContent?.includes(symbol);
+                const cardDataSymbol = card.getAttribute('data-symbol') === symbol;
+                
+                if (cardSymbolH2 || cardSymbolDiv || cardDataSymbol) {
+                    // Check for both positions-list (new) and position-grid (existing DFH) structure
+                    tradeContainer = card.querySelector('.positions-list') || card.querySelector('.position-grid');
                     break;
                 }
             }
@@ -2393,10 +2405,26 @@
                 positionHTML = generateCSPPositionHTML(positionId, position);
             }
 
-            // Insert the new position before the "Add Position" button
-            const addPositionBtn = tradeContainer.querySelector('.add-position-btn');
-            if (addPositionBtn && positionHTML) {
-                addPositionBtn.insertAdjacentHTML('beforebegin', positionHTML);
+            // Insert the new position into the appropriate container
+            if (positionHTML) {
+                if (tradeContainer.classList.contains('position-grid')) {
+                    // For existing DFH structure, add to the position-grid before the "Add Position" section
+                    const addPositionBtn = tradeContainer.querySelector('.add-position-btn');
+                    if (addPositionBtn) {
+                        addPositionBtn.insertAdjacentHTML('beforebegin', positionHTML);
+                    } else {
+                        // If no add button found, just append to the grid
+                        tradeContainer.insertAdjacentHTML('beforeend', positionHTML);
+                    }
+                } else {
+                    // For new structure with positions-list
+                    const addPositionBtn = tradeContainer.querySelector('.add-position-btn');
+                    if (addPositionBtn) {
+                        addPositionBtn.insertAdjacentHTML('beforebegin', positionHTML);
+                    } else {
+                        tradeContainer.insertAdjacentHTML('beforeend', positionHTML);
+                    }
+                }
             }
         }
 
